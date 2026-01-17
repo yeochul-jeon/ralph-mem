@@ -55,30 +55,27 @@ flowchart TB
     end
 
     subgraph Hook["Hook Layer (패시브, 항상 동작)"]
-        UPS["UserPromptSubmit<br/>컨텍스트 주입"]
-        PTU["PostToolUse<br/>관찰 기록"]
-        SS["SessionStart<br/>세션 초기화"]
-        SE["SessionEnd<br/>요약 생성"]
+        direction LR
+        SS["SessionStart"]
+        UPS["UserPromptSubmit"]
+        PTU["PostToolUse"]
+        SE["SessionEnd"]
     end
 
     subgraph Core["Core Layer (인프라, 항상 동작)"]
-        Store["Memory Store"]
+        direction LR
         Search["Search Engine"]
+        Store["Memory Store"]
         Compress["Compressor"]
+    end
+
+    subgraph Storage["Storage"]
         DB[(SQLite + FTS5)]
     end
 
-    Ralph -->|"결과 저장"| Store
-    Ralph -->|"컨텍스트 요청"| Search
-
-    UPS -->|"관련 메모리 조회"| Search
-    PTU -->|"관찰 저장"| Store
-    SS -->|"세션 생성"| Store
-    SE -->|"요약 저장"| Store
-
-    Store --> DB
-    Search --> DB
-    Compress --> Store
+    Ralph --> Hook
+    Hook --> Core
+    Core --> Storage
 ```
 
 ### 3.2 레이어 비교
