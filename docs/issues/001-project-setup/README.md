@@ -67,4 +67,4 @@ bunx tsc --noEmit
 ## 완료
 
 - **완료일**: 2025-01-17
-- **Evidence**: [001-project-setup.md](../evidence/001-project-setup.md)
+- **Evidence**: [evidence.md](./evidence.md)

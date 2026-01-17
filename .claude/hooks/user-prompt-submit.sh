@@ -22,9 +22,9 @@ find_related_docs() {
         grep -l -i "$keywords" "$DESIGN_DIR"/*.md 2>/dev/null | head -3
     fi
 
-    # 이슈 문서에서 검색
+    # 이슈 문서에서 검색 (폴더 구조)
     if [ -d "$ISSUES_DIR" ]; then
-        grep -l -i "$keywords" "$ISSUES_DIR"/*.md 2>/dev/null | head -5
+        grep -rl -i "$keywords" "$ISSUES_DIR"/*/README.md 2>/dev/null | head -5
     fi
 }
 
@@ -43,10 +43,10 @@ issues=$(detect_issues)
 if [ -n "$issues" ]; then
     for num in $issues; do
         padded=$(printf "%03d" "$num")
-        issue_file=$(ls "$ISSUES_DIR"/${padded}-*.md 2>/dev/null | head -1)
-        if [ -f "$issue_file" ]; then
-            filename=$(basename "$issue_file")
-            output="$output\n📋 Issue #$padded: $filename"
+        issue_dir=$(ls -d "$ISSUES_DIR"/${padded}-* 2>/dev/null | head -1)
+        if [ -d "$issue_dir" ]; then
+            dirname=$(basename "$issue_dir")
+            output="$output\n📋 Issue #$padded: $dirname/"
         fi
     done
 fi
@@ -63,15 +63,15 @@ if [ -n "$keywords" ]; then
         fi
     done
 
-    # 이슈 문서 (명시적으로 지정되지 않은 것만)
-    issue_matches=$(grep -l -iE "$keywords" "$ISSUES_DIR"/[0-9]*.md 2>/dev/null | head -3)
+    # 이슈 문서 (폴더 구조, 명시적으로 지정되지 않은 것만)
+    issue_matches=$(grep -rl -iE "$keywords" "$ISSUES_DIR"/[0-9]*/README.md 2>/dev/null | head -3)
     for doc in $issue_matches; do
         if [ -f "$doc" ]; then
-            filename=$(basename "$doc")
+            dirname=$(basename "$(dirname "$doc")")
             # 이미 명시적으로 언급된 이슈는 제외
-            num=$(echo "$filename" | grep -oE '^[0-9]+')
+            num=$(echo "$dirname" | grep -oE '^[0-9]+')
             if ! echo "$issues" | grep -q "^$((10#$num))$"; then
-                output="$output\n📝 Related: $filename"
+                output="$output\n📝 Related: $dirname/"
             fi
         fi
     done
