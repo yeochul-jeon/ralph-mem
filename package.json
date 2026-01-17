@@ -5,9 +5,22 @@
   "description": "Persistent context management plugin for Claude Code with Ralph Loop",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "plugin.json",
+    "prompts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roboco-io/ralph-mem.git"
+  },
+  "bugs": {
+    "url": "https://github.com/roboco-io/ralph-mem/issues"
+  },
+  "homepage": "https://github.com/roboco-io/ralph-mem#readme",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun run scripts/build.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
