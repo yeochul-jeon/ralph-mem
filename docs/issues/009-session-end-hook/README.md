@@ -39,11 +39,15 @@
 
 ## 인수 조건
 
-- [ ] 세션 종료 시 ended_at 기록
-- [ ] 요약 생성 및 저장
-- [ ] observations 없을 때도 정상 종료
-- [ ] 에러 발생 시 graceful 처리
-- [ ] 종료 이유(reason) 기록
+- [x] 세션 종료 시 ended_at 기록
+- [x] 요약 생성 및 저장
+- [x] observations 없을 때도 정상 종료
+- [x] 에러 발생 시 graceful 처리
+- [x] 종료 이유(reason) 기록
+
+## Evidence
+
+[완료 증빙](./evidence.md)
 
 ## 검증 명령
 
