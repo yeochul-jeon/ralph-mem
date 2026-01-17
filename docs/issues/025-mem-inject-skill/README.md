@@ -44,11 +44,15 @@
 
 ## 인수 조건
 
-- [ ] 컨텍스트 저장 성공
-- [ ] 현재 세션에 연결
-- [ ] --importance 옵션 동작
-- [ ] 저장된 ID 반환
-- [ ] FTS 인덱스에 추가
+- [x] 컨텍스트 저장 성공
+- [x] 현재 세션에 연결
+- [x] --importance 옵션 동작
+- [x] 저장된 ID 반환
+- [x] FTS 인덱스에 추가
+
+## Evidence
+
+[evidence.md](evidence.md)
 
 ## 검증 명령
 
