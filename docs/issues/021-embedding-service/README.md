@@ -45,17 +45,17 @@ paraphrase-multilingual 모델을 로컬에서 실행합니다.
 
 ## 인수 조건
 
-- [ ] 모델 로딩 성공
-- [ ] 텍스트 → 384차원 벡터 변환
-- [ ] 한국어 텍스트 인코딩
-- [ ] 영어 텍스트 인코딩
-- [ ] 비동기 생성 동작
-- [ ] 유사도 검색 동작
+- [x] 모델 로딩 성공
+- [x] 텍스트 → 384차원 벡터 변환
+- [x] 한국어 텍스트 인코딩
+- [x] 영어 텍스트 인코딩
+- [x] 비동기 생성 동작
+- [x] 유사도 검색 동작
 
 ## 검증 명령
 
 ```bash
-bun test src/core/__tests__/embedding.test.ts
+bun test tests/core/embedding.test.ts
 
 # 테스트 케이스
 # - 영어 텍스트 인코딩
@@ -64,3 +64,7 @@ bun test src/core/__tests__/embedding.test.ts
 # - 다른 텍스트 낮은 유사도
 # - 배치 인코딩
 ```
+
+## Evidence
+
+- [evidence.md](./evidence.md)
