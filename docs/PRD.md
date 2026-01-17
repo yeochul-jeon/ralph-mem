@@ -165,26 +165,22 @@ CREATE VIRTUAL TABLE observations_fts USING fts5(
 
 ```mermaid
 flowchart TB
-    subgraph Memory["Memory Architecture"]
-        subgraph L1["Layer 1: Index (50-100 tokens/result)"]
-            L1A[Session summaries]
-            L1B[Observation IDs]
-            L1C[Relevance scores]
-        end
-
-        subgraph L2["Layer 2: Timeline (contextual)"]
-            L2A[Chronological ordering]
-            L2B[Related observations]
-        end
-
-        subgraph L3["Layer 3: Full Details (500-1000 tokens/result)"]
-            L3A[Complete observations]
-            L3B[Code snippets]
-        end
-
-        L1 --> L2
-        L2 --> L3
+    subgraph L1["L1: Index · 50-100 tok"]
+        direction LR
+        L1A[Summaries] ~~~ L1B[IDs] ~~~ L1C[Scores]
     end
+
+    subgraph L2["L2: Timeline · 200-300 tok"]
+        direction LR
+        L2A[Chronological] ~~~ L2B[Related]
+    end
+
+    subgraph L3["L3: Full · 500-1000 tok"]
+        direction LR
+        L3A[Complete] ~~~ L3B[Code]
+    end
+
+    L1 --> L2 --> L3
 ```
 
 ### 4.3 Memory Search API
