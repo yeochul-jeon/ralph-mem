@@ -53,12 +53,16 @@
 
 ## 인수 조건
 
-- [ ] Edit/Write 도구 결과 기록
-- [ ] Bash 명령 결과 기록
-- [ ] Read/Glob/Grep 결과 기록 안 함
-- [ ] 에러 시 type='error'로 기록
-- [ ] 중요도 정확히 계산
-- [ ] exclude_patterns 동작
+- [x] Edit/Write 도구 결과 기록
+- [x] Bash 명령 결과 기록
+- [x] Read/Glob/Grep 결과 기록 안 함
+- [x] 에러 시 type='error'로 기록
+- [x] 중요도 정확히 계산
+- [x] exclude_patterns 동작
+
+## Evidence
+
+[완료 증빙](./evidence.md)
 
 ## 검증 명령
 
