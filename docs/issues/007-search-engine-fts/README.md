@@ -53,22 +53,20 @@ FTS5 기반 전문 검색 엔진이 필요합니다.
 
 ## 인수 조건
 
-- [ ] 키워드 검색 결과 반환
-- [ ] score 기준 정렬
-- [ ] limit 옵션 동작
-- [ ] since 필터 동작
-- [ ] types 필터 동작
-- [ ] Layer 1/2/3 차별화된 결과
+- [x] 키워드 검색 결과 반환
+- [x] score 기준 정렬
+- [x] limit 옵션 동작
+- [x] since 필터 동작
+- [x] types 필터 동작
+- [x] Layer 1/2/3 차별화된 결과
 
 ## 검증 명령
 
 ```bash
-bun test src/core/__tests__/search.test.ts
-
-# 테스트 케이스
-# - 단일 키워드 검색
-# - 복합 키워드 검색
-# - 필터 조합 테스트
-# - Progressive Disclosure 각 레이어
-# - 결과 없을 때 빈 배열
+bun run test tests/core/search.test.ts
 ```
+
+## 완료
+
+- **완료일**: 2025-01-17
+- **Evidence**: [evidence.md](./evidence.md)
