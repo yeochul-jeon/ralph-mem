@@ -11,7 +11,20 @@ export const VERSION = "0.1.0";
 export * from "./core/store";
 export * from "./core/search";
 
-// Plugin entry point (to be implemented)
+// Hook exports (to be implemented)
+export { sessionStartHook } from "./hooks/session-start";
+export { sessionEndHook } from "./hooks/session-end";
+export { userPromptSubmitHook } from "./hooks/user-prompt-submit";
+export { postToolUseHook } from "./hooks/post-tool-use";
+
+// Skill exports (to be implemented)
+export { ralphSkill } from "./skills/ralph";
+export { memSearchSkill } from "./skills/mem-search";
+export { memInjectSkill } from "./skills/mem-inject";
+export { memForgetSkill } from "./skills/mem-forget";
+export { memStatusSkill } from "./skills/mem-status";
+
+// Plugin lifecycle
 export async function activate(): Promise<void> {
   console.log(`ralph-mem v${VERSION} activated`);
 }

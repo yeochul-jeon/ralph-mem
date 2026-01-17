@@ -40,11 +40,11 @@ Claude Code 플러그인으로 동작하려면 plugin.json 매니페스트 파�
 
 ## 인수 조건
 
-- [ ] plugin.json이 유효한 JSON
-- [ ] 모든 hooks가 선언됨
-- [ ] 모든 skills가 선언됨
-- [ ] main 경로가 빌드 출력과 일치
-- [ ] src/index.ts가 플러그인 구조를 export
+- [x] plugin.json이 유효한 JSON
+- [x] 모든 hooks가 선언됨
+- [x] 모든 skills가 선언됨
+- [x] main 경로가 빌드 출력과 일치
+- [x] src/index.ts가 플러그인 구조를 export
 
 ## 검증 명령
 
@@ -59,3 +59,8 @@ cat plugin.json | jq '.skills | length' # 5
 # 빌드 후 main 파일 존재
 bun run build && ls dist/index.js
 ```
+
+## 완료
+
+- **완료일**: 2025-01-17
+- **Evidence**: [evidence.md](./evidence.md)
