@@ -55,18 +55,22 @@
 
 ## 인수 조건
 
-- [ ] 실행 중 Loop 상태 표시
-- [ ] 반복별 결과 요약 표시
-- [ ] 비활성 상태 메시지
-- [ ] --history 이력 조회
+- [x] 실행 중 Loop 상태 표시
+- [x] 반복별 결과 요약 표시
+- [x] 비활성 상태 메시지
+- [x] --history 이력 조회
 
 ## 검증 명령
 
 ```bash
-bun test src/skills/__tests__/ralph-status.test.ts
+bun test tests/skills/ralph-status.test.ts
 
 # 테스트 케이스
 # - 실행 중 상태 표시
 # - 비활성 상태 표시
 # - 이력 조회
 ```
+
+## Evidence
+
+- [evidence.md](./evidence.md)

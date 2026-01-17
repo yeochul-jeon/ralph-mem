@@ -4,7 +4,7 @@
  * Commands for Ralph Loop:
  * - /ralph start "task" [--criteria type] [--max-iterations n]
  * - /ralph stop [--rollback]
- * - /ralph status
+ * - /ralph status [--history]
  *
  * See: docs/issues/017-ralph-start-command/README.md
  */
@@ -69,6 +69,25 @@ export interface RalphStopResult {
 }
 
 /**
+ * Arguments for /ralph status command
+ */
+export interface RalphStatusArgs {
+	history?: boolean;
+}
+
+/**
+ * Loop history entry
+ */
+export interface LoopHistoryEntry {
+	id: string;
+	task: string;
+	status: string;
+	iterations: number;
+	startedAt: Date;
+	endedAt?: Date;
+}
+
+/**
  * Result of /ralph status command
  */
 export interface RalphStatusResult {
@@ -80,6 +99,7 @@ export interface RalphStatusResult {
 		maxIterations: number;
 		startedAt: Date;
 	};
+	history?: LoopHistoryEntry[];
 	message: string;
 }
 
@@ -223,7 +243,9 @@ export function formatStatusMessage(
 	},
 ): string {
 	if (!isRunning || !run) {
-		return "📊 Ralph Loop 상태: 실행 중인 Loop 없음";
+		return `📊 Ralph Loop 상태: 실행 중인 Loop 없음
+
+시작: /ralph start "태스크 설명"`;
 	}
 
 	const elapsed = Math.floor((Date.now() - run.startedAt.getTime()) / 1000);
@@ -238,6 +260,29 @@ Loop ID: ${run.id}
 경과: ${minutes}분 ${seconds}초
 
 중단: /ralph stop`;
+}
+
+/**
+ * Format history message
+ */
+export function formatHistoryMessage(history: LoopHistoryEntry[]): string {
+	if (history.length === 0) {
+		return "📋 Ralph Loop 이력: 이력 없음";
+	}
+
+	const rows = history.map((entry) => {
+		const taskShort =
+			entry.task.length > 20 ? `${entry.task.slice(0, 17)}...` : entry.task;
+		return `│ ${entry.id.padEnd(14)} │ ${taskShort.padEnd(20)} │ ${entry.status.padEnd(7)} │ ${String(entry.iterations).padStart(4)} │`;
+	});
+
+	return `📋 최근 Ralph Loop 이력
+
+┌────────────────┬──────────────────────┬─────────┬──────┐
+│ ID             │ 태스크               │ 상태    │ 반복 │
+├────────────────┼──────────────────────┼─────────┼──────┤
+${rows.join("\n")}
+└────────────────┴──────────────────────┴─────────┴──────┘`;
 }
 
 /**
@@ -395,7 +440,7 @@ export function createRalphSkill(context: RalphContext) {
 		/**
 		 * Get status of Ralph Loop
 		 */
-		async status(): Promise<RalphStatusResult> {
+		async status(args: RalphStatusArgs = {}): Promise<RalphStatusResult> {
 			const eng = getOrCreateEngine();
 			const isRunning = eng.isRunning();
 			const currentRun = eng.getCurrentRun();
@@ -420,11 +465,29 @@ export function createRalphSkill(context: RalphContext) {
 				};
 			}
 
-			const message = formatStatusMessage(isRunning, run);
+			// Get history if requested
+			let history: LoopHistoryEntry[] | undefined;
+			if (args.history && context.client) {
+				const loopRuns = context.client.listLoopRuns(sessionId, 10);
+				history = loopRuns.map((lr) => ({
+					id: lr.id,
+					task: lr.task,
+					status: lr.status,
+					iterations: lr.iterations,
+					startedAt: new Date(lr.started_at),
+					endedAt: lr.ended_at ? new Date(lr.ended_at) : undefined,
+				}));
+			}
+
+			const message =
+				args.history && history
+					? formatHistoryMessage(history)
+					: formatStatusMessage(isRunning, run);
 
 			return {
 				isRunning,
 				currentRun: run,
+				history,
 				message,
 			};
 		},
@@ -478,7 +541,8 @@ export async function executeRalphCommand(
 			}
 
 			case "status": {
-				const result = await skill.status();
+				const history = argsString.includes("--history");
+				const result = await skill.status({ history });
 				return result.message;
 			}
 
@@ -488,7 +552,7 @@ export async function executeRalphCommand(
 사용 가능한 명령:
   /ralph start "태스크" [--criteria type] [--max-iterations n]
   /ralph stop [--rollback]
-  /ralph status`;
+  /ralph status [--history]`;
 		}
 	} finally {
 		skill.close();
