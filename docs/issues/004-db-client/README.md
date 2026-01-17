@@ -52,21 +52,20 @@ SQLite 데이터베이스에 접근하기 위한 클라이언트가 필요합니
 
 ## 인수 조건
 
-- [ ] Session CRUD 동작
-- [ ] Observation CRUD 동작
-- [ ] LoopRun CRUD 동작
-- [ ] 글로벌 DB 경로 정상 생성
-- [ ] 프로젝트 DB 경로 정상 생성
-- [ ] 연결/종료 정상 동작
+- [x] Session CRUD 동작
+- [x] Observation CRUD 동작
+- [x] LoopRun CRUD 동작
+- [x] 글로벌 DB 경로 정상 생성
+- [x] 프로젝트 DB 경로 정상 생성
+- [x] 연결/종료 정상 동작
 
 ## 검증 명령
 
 ```bash
-bun test src/core/db/__tests__/client.test.ts
-
-# 테스트 케이스
-# - createSession → getSession 일치
-# - createObservation → listObservations 포함
-# - updateSession 반영 확인
-# - deleteObservation 후 getObservation null
+bun run test tests/core/db/client.test.ts tests/core/db/paths.test.ts
 ```
+
+## 완료
+
+- **완료일**: 2025-01-17
+- **Evidence**: [evidence.md](./evidence.md)
