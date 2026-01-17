@@ -46,21 +46,19 @@
 
 ## 인수 조건
 
-- [ ] 세션 시작 시 새 Session 레코드 생성
-- [ ] 이전 세션 요약 로드 성공
-- [ ] 설정된 토큰 제한 내 컨텍스트 생성
-- [ ] auto_inject=false 시 빈 컨텍스트
-- [ ] DB 백업 파일 생성 확인
+- [x] 세션 시작 시 새 Session 레코드 생성
+- [x] 이전 세션 요약 로드 성공
+- [x] 설정된 토큰 제한 내 컨텍스트 생성
+- [x] auto_inject=false 시 빈 컨텍스트
+- [x] DB 백업 파일 생성 확인
 
 ## 검증 명령
 
 ```bash
-bun test src/hooks/__tests__/session-start.test.ts
-
-# 테스트 케이스
-# - 새 세션 생성 확인
-# - 이전 세션 있을 때 컨텍스트 주입
-# - 이전 세션 없을 때 빈 컨텍스트
-# - 토큰 제한 준수
-# - 설정 플래그 동작
+bun run test tests/hooks/session-start.test.ts
 ```
+
+## 완료
+
+- **완료일**: 2025-01-17
+- **Evidence**: [evidence.md](./evidence.md)
