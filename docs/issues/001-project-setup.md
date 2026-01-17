@@ -49,17 +49,22 @@ Bun 런타임, TypeScript, Vitest 테스트 프레임워크를 사용합니다.
 
 ## 인수 조건
 
-- [ ] `bun install` 성공
-- [ ] `bun run build` 성공 (빈 프로젝트지만 에러 없음)
-- [ ] `bun test` 실행 가능 (테스트 0개)
-- [ ] TypeScript 컴파일 에러 없음
-- [ ] 디렉토리 구조가 PRD와 일치
+- [x] `bun install` 성공
+- [x] `bun run build` 성공 (빈 프로젝트지만 에러 없음)
+- [x] `bun test` 실행 가능 (vitest로 실행, todo 테스트 3개)
+- [x] TypeScript 컴파일 에러 없음
+- [x] 디렉토리 구조가 PRD와 일치
 
 ## 검증 명령
 
 ```bash
 bun install
 bun run build
-bun test
+bunx vitest run
 bunx tsc --noEmit
 ```
+
+## 완료
+
+- **완료일**: 2025-01-17
+- **Evidence**: [001-project-setup.md](../evidence/001-project-setup.md)
