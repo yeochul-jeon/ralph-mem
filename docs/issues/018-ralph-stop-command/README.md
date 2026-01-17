@@ -38,19 +38,23 @@
 
 ## 인수 조건
 
-- [ ] 실행 중인 Loop 중단
-- [ ] 상태 'stopped'로 변경
-- [ ] --rollback 옵션 시 파일 복원
-- [ ] 종료 메시지 출력
-- [ ] Loop 없을 때 안내 메시지
+- [x] 실행 중인 Loop 중단
+- [x] 상태 'stopped'로 변경
+- [x] --rollback 옵션 시 파일 복원
+- [x] 종료 메시지 출력
+- [x] Loop 없을 때 안내 메시지
 
 ## 검증 명령
 
 ```bash
-bun test src/skills/__tests__/ralph-stop.test.ts
+bun test tests/skills/ralph-stop.test.ts
 
 # 테스트 케이스
 # - 실행 중 Loop 중단
 # - 롤백 옵션
 # - Loop 없을 때 메시지
 ```
+
+## Evidence
+
+- [evidence.md](./evidence.md)
