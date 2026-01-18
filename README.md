@@ -125,6 +125,19 @@ Claude Code에서 플러그인으로 사용하려면 [roboco-io/plugins](https:/
 
 또는 `/plugin` 명령으로 플러그인 매니저를 열어 UI에서 설치할 수 있습니다.
 
+### 플러그인 업데이트
+
+```bash
+# 최신 버전으로 업데이트
+/plugin update ralph-mem
+
+# 또는 재설치
+/plugin uninstall ralph-mem
+/plugin install ralph-mem@roboco-plugins
+```
+
+업데이트 후 Claude Code를 재시작하면 변경 사항이 적용됩니다.
+
 ## 사용법
 
 ### Ralph Loop
@@ -225,6 +238,144 @@ privacy:
     - "*password*"
     - "*secret*"
 ```
+
+## 동작 원리
+
+ralph-mem은 크게 두 가지 모드로 동작합니다:
+
+1. **자동 모드 (Lifecycle Hooks)**: 사용자 개입 없이 백그라운드에서 동작
+2. **명시적 모드 (Skills/Commands)**: 사용자가 슬래시 명령어로 직접 제어
+
+### Lifecycle Hooks
+
+플러그인이 설치되면 Claude Code의 lifecycle에 자동으로 연결되어 동작합니다.
+
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant Hook as Hook Layer
+    participant Core as Core Layer
+    participant DB as SQLite
+
+    CC->>Hook: SessionStart
+    Hook->>Core: 관련 메모리 검색
+    Core->>DB: FTS5 + Embedding 검색
+    DB-->>Core: 이전 컨텍스트
+    Core-->>Hook: 검색 결과
+    Hook-->>CC: 컨텍스트 자동 주입
+
+    CC->>Hook: UserPromptSubmit
+    Hook->>Core: 쿼리 관련 검색
+    Core-->>Hook: 관련 메모리 알림
+    Hook-->>CC: 알림 표시 (주입 X)
+
+    CC->>Hook: PostToolUse
+    Hook->>Core: 도구 사용 결과 기록
+    Core->>DB: Observation 저장
+
+    CC->>Hook: SessionEnd
+    Hook->>Core: 세션 요약 생성
+    Core->>DB: 요약 저장
+```
+
+| Hook | 시점 | 동작 |
+|------|------|------|
+| `SessionStart` | 세션 시작 | 프로젝트 관련 이전 컨텍스트 자동 주입 |
+| `UserPromptSubmit` | 프롬프트 제출 | 관련 메모리 알림 (토큰 절약을 위해 주입하지 않음) |
+| `PostToolUse` | 도구 사용 후 | 쓰기 도구, Bash 명령 결과를 Observation으로 기록 |
+| `SessionEnd` | 세션 종료 | 세션 요약 생성 및 저장 |
+
+### Ralph Loop 동작
+
+`/ralph start` 명령으로 활성화되며, 성공 기준 달성까지 자동 반복합니다.
+
+```mermaid
+flowchart LR
+    A[Task + Context] --> B[Claude 실행]
+    B --> C{성공 판단}
+    C -->|YES| D[완료]
+    C -->|NO| E[결과 추가]
+    E --> F{중단 조건?}
+    F -->|NO| A
+    F -->|YES| G[실패 + 롤백 안내]
+```
+
+**성공 판단**: Claude가 테스트/빌드 출력을 분석하여 성공 여부를 판단합니다.
+
+**Overbaking 방지**: 무한 반복을 방지하기 위한 중단 조건:
+
+| 조건 | 기본값 | 설명 |
+|------|--------|------|
+| `maxIterations` | 10 | 최대 반복 횟수 |
+| `maxDurationMs` | 30분 | 최대 실행 시간 |
+| `noProgressThreshold` | 3회 | 진척 없음 허용 횟수 |
+
+**스냅샷**: Loop 시작 시 변경 파일을 스냅샷으로 저장하여 실패 시 롤백 가능.
+
+### 검색 엔진
+
+2단계 검색으로 최적의 결과를 반환합니다:
+
+1. **FTS5 전문 검색** (기본): SQLite FTS5를 사용한 빠른 텍스트 검색
+2. **Embedding 유사도** (폴백): FTS5 결과가 부족할 때 의미 기반 검색
+
+**Embedding 모델**: `paraphrase-multilingual-MiniLM-L12-v2`
+- 로컬 실행 (API 호출 없음)
+- 50+ 언어 지원 (한국어, 영어 포함)
+- 384차원, ~278MB
+
+### 데이터 흐름
+
+```mermaid
+flowchart TB
+    subgraph Input["입력"]
+        Tool[도구 사용 결과]
+        Prompt[사용자 프롬프트]
+    end
+
+    subgraph Process["처리"]
+        Privacy[Privacy 필터]
+        Compress[압축기]
+        Embed[Embedding 생성]
+    end
+
+    subgraph Storage["저장"]
+        Obs[(Observations)]
+        Session[(Sessions)]
+        FTS[(FTS5 Index)]
+        Vec[(Embedding)]
+    end
+
+    Tool --> Privacy
+    Privacy --> Compress
+    Compress --> Obs
+    Obs --> FTS
+    Obs --> Embed
+    Embed --> Vec
+
+    Prompt --> FTS
+    Prompt --> Vec
+    FTS --> Result[검색 결과]
+    Vec --> Result
+```
+
+### Observation 타입
+
+도구 사용 결과는 타입별로 분류되어 저장됩니다:
+
+| 타입 | 설명 | 기록 대상 |
+|------|------|----------|
+| `tool_use` | 도구 사용 결과 | Edit, Write 등 쓰기 도구 |
+| `bash` | 명령 실행 결과 | Bash 명령어 |
+| `error` | 에러 발생 | 모든 에러 (높은 중요도) |
+| `success` | 성공 기록 | 테스트 통과, 빌드 성공 |
+| `note` | 수동 메모 | `/mem-inject`로 주입된 내용 |
+
+**중요도 자동 산정**:
+- 에러 발생: 1.0 (최고)
+- 테스트 통과/실패: 0.9
+- 파일 생성/수정: 0.7
+- 일반 명령: 0.5
 
 ## 아키텍처
 
