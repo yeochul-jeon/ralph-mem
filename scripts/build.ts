@@ -49,9 +49,44 @@ for (const jsFile of jsFiles) {
 	// Find all export lines and track exports
 	const seenExports = new Set<string>();
 	const filteredLines: string[] = [];
+	let inExportBlock = false;
 
 	for (const line of lines) {
 		const trimmed = line.trim();
+
+		// Track multi-line export block start
+		if (trimmed.match(/^export\s*\{/) && !trimmed.includes("};")) {
+			inExportBlock = true;
+			filteredLines.push(line);
+			// Extract any exports on the same line as opening brace
+			const sameLineExports = trimmed.match(/export\s*\{\s*(.+)/);
+			if (sameLineExports) {
+				const exports = sameLineExports[1].split(",").map((e) => e.trim());
+				for (const exp of exports) {
+					if (exp && exp !== "{") seenExports.add(exp);
+				}
+			}
+			continue;
+		}
+
+		// Track exports inside multi-line block
+		if (inExportBlock) {
+			// Check for closing brace
+			if (trimmed.includes("}")) {
+				inExportBlock = false;
+			}
+			// Extract export names (handles "name" or "name,")
+			const exportNames = trimmed
+				.replace(/[{};]/g, "")
+				.split(",")
+				.map((e) => e.trim())
+				.filter((e) => e);
+			for (const name of exportNames) {
+				seenExports.add(name);
+			}
+			filteredLines.push(line);
+			continue;
+		}
 
 		// Match single-line export like: export { foo };
 		const singleExportMatch = trimmed.match(/^export\s*\{\s*(\w+)\s*\};$/);
@@ -62,25 +97,6 @@ for (const jsFile of jsFiles) {
 				continue;
 			}
 			seenExports.add(exportName);
-		}
-
-		// Track multi-line export block exports
-		const multiExportMatch = trimmed.match(/^export\s*\{$/);
-		if (multiExportMatch) {
-			// Collect all exports from this block
-			const blockStart = filteredLines.length;
-			filteredLines.push(line);
-			continue;
-		}
-
-		// Track exports inside multi-line block (name or name,)
-		const inBlockMatch = trimmed.match(/^(\w+),?$/);
-		if (
-			inBlockMatch &&
-			filteredLines.length > 0 &&
-			filteredLines[filteredLines.length - 1]?.includes("export {")
-		) {
-			seenExports.add(inBlockMatch[1]);
 		}
 
 		filteredLines.push(line);
