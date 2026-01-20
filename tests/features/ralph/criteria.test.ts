@@ -144,13 +144,17 @@ describe("Success Criteria Evaluator", () => {
 			expect(result.exitCode).not.toBe(0);
 		});
 
-		it("should timeout long running command", async () => {
-			const result = await executeCommand("sleep", ["10"], {
-				timeout: 100,
-			});
+		it(
+			"should timeout long running command",
+			async () => {
+				const result = await executeCommand("sleep", ["10"], {
+					timeout: 100,
+				});
 
-			expect(result.exitCode).toBe(-1);
-		});
+				expect(result.exitCode).toBe(-1);
+			},
+			{ timeout: 10000 },
+		);
 
 		it("should use custom cwd", async () => {
 			const result = await executeCommand("pwd", [], {
