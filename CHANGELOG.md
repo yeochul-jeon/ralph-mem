@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2025-01-20
+
+### Fixed
+- macOS ARM64에서 "Could not locate the bindings file" 에러 수정 (Issue #5)
+- better-sqlite3에서 bun:sqlite로 마이그레이션하여 네이티브 바인딩 문제 해결
+- FTS5 트리거로 인한 삭제 카운트 오류 수정 (mem-forget)
+
+### Changed
+- 테스트 러너를 vitest에서 bun test로 변경
+- 모든 문서를 영문으로 번역
+- 한국어 문서는 .ko.md 형식으로 이름 변경
+
+### Documentation
+- README, PRD, ARCHITECTURE 영문 번역
+- docs/design/ 전체 영문 번역 (7개 문서)
+- 각 영문 문서에 한국어 버전 링크 추가
+
 ## [0.1.3] - 2025-01-18
 
 ### Fixed
