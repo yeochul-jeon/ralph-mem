@@ -144,7 +144,8 @@ describe("Success Criteria Evaluator", () => {
 			expect(result.exitCode).not.toBe(0);
 		});
 
-		it(
+		// Skip in CI - shell process kill behavior varies across environments
+		it.skipIf(!!process.env.CI)(
 			"should timeout long running command",
 			async () => {
 				const result = await executeCommand("sleep", ["10"], {

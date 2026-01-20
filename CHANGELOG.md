@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.9] - 2025-01-20
+## [0.1.10] - 2025-01-20
 
 ### Fixed
 - Hook 실행 시 `bun:sqlite` 모듈을 찾을 수 없는 오류 수정 (node → bun 런타임 변경)
-- CI 환경에서 타임아웃 테스트 안정화
+- CI 환경에서 타임아웃 테스트 스킵 (shell 프로세스 kill 동작이 환경마다 다름)
+
+## [0.1.9] - 2025-01-20
+
+### Fixed
+- (릴리즈 실패 - CI 테스트 타임아웃)
 
 ## [0.1.8] - 2025-01-20
 
