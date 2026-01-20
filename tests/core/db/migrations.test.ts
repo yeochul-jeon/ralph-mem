@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	MIGRATIONS,
@@ -9,7 +9,7 @@ import {
 } from "../../../src/core/db/migrations";
 
 describe("Migrations", () => {
-	let db: Database.Database;
+	let db: Database;
 
 	beforeEach(() => {
 		db = new Database(":memory:");
@@ -223,7 +223,7 @@ describe("Migrations", () => {
 
 		it("should cascade delete observations when session deleted", () => {
 			// Enable foreign keys
-			db.pragma("foreign_keys = ON");
+			db.run("PRAGMA foreign_keys = ON");
 
 			db.exec(
 				"INSERT INTO sessions (id, project_path, started_at) VALUES ('s1', '/test', datetime('now'))",
@@ -238,8 +238,8 @@ describe("Migrations", () => {
 			// Observation should be deleted
 			const obs = db
 				.prepare("SELECT id FROM observations WHERE id = 'o1'")
-				.get() as { id: string } | undefined;
-			expect(obs).toBeUndefined();
+				.get() as { id: string } | null;
+			expect(obs).toBeNull();
 		});
 	});
 });

@@ -1,12 +1,10 @@
 # Core Layer
 
-> Memory Store, Search Engine, Embedding design
+> Memory Store, Search Engine, Embedding 설계
 
-**[한국어 버전 (Korean)](./core-layer.ko.md)**
+## 개요
 
-## Overview
-
-Core Layer is always-active infrastructure that provides services to Hook Layer and Feature Layer.
+Core Layer는 항상 활성화된 인프라로, Hook Layer와 Feature Layer에 서비스를 제공합니다.
 
 ```mermaid
 flowchart TB
@@ -23,13 +21,13 @@ flowchart TB
 
 ## Memory Store
 
-### Responsibilities
+### 책임
 
-- Observation CRUD operations
-- Session management
-- Token count tracking
+- Observation CRUD 작업
+- Session 관리
+- 토큰 카운트 추적
 
-### Interface
+### 인터페이스
 
 ```typescript
 interface MemoryStore {
@@ -46,23 +44,23 @@ interface MemoryStore {
 }
 ```
 
-### Memory Cleanup
+### 메모리 정리
 
-Observations older than 30 days are summarized then deleted:
+30일 이상 된 observation은 요약 후 삭제:
 
-1. Query old observations
-2. Request summary from Claude
-3. Save summary as new observation
-4. Delete originals
+1. 오래된 observation 조회
+2. Claude에게 요약 요청
+3. 요약을 새 observation으로 저장
+4. 원본 삭제
 
 ## Search Engine
 
-### Search Priority
+### 검색 우선순위
 
-1. **FTS5 full-text search** (default)
-2. **Embedding similarity** (fallback when FTS5 results insufficient)
+1. **FTS5 전문 검색** (기본)
+2. **Embedding 유사도** (FTS5 결과 부족 시 폴백)
 
-### Interface
+### 인터페이스
 
 ```typescript
 interface SearchEngine {
@@ -71,7 +69,7 @@ interface SearchEngine {
 }
 
 interface SearchOptions {
-  limit?: number;           // Default: 10
+  limit?: number;           // 기본: 10
   layer?: 1 | 2 | 3;        // Progressive Disclosure
   since?: Date;
   types?: ObservationType[];
@@ -80,17 +78,17 @@ interface SearchOptions {
 
 ### Progressive Disclosure
 
-| Layer | Content | Tokens |
-|-------|---------|--------|
-| 1 | ID + score + one-line summary | ~50/item |
-| 2 | Chronological context | ~200/item |
-| 3 | Full details | ~500/item |
+| Layer | 내용 | 토큰 |
+|-------|------|------|
+| 1 | ID + 점수 + 한줄 요약 | ~50/건 |
+| 2 | 시간순 컨텍스트 | ~200/건 |
+| 3 | 전체 상세 | ~500/건 |
 
 ```typescript
-// Layer 1 example
-{ id: "obs-a1b2", score: 0.92, summary: "Implemented JWT auth middleware" }
+// Layer 1 예시
+{ id: "obs-a1b2", score: 0.92, summary: "JWT 인증 미들웨어 구현" }
 
-// Layer 3 example
+// Layer 3 예시
 { id: "obs-a1b2", score: 0.92,
   content: "// Full tool output...",
   session: { ... },
@@ -99,27 +97,27 @@ interface SearchOptions {
 
 ## Embedding
 
-### Model Selection
+### 모델 선택
 
 **paraphrase-multilingual-MiniLM-L12-v2**
 
-| Item | Value |
-|------|-------|
-| Size | ~278MB |
-| Dimensions | 384 |
-| Languages | 50+ (Korean, English included) |
-| Performance | Fast inference |
+| 항목 | 값 |
+|------|-----|
+| 크기 | ~278MB |
+| 차원 | 384 |
+| 언어 | 50+ (한국어, 영어 포함) |
+| 성능 | 빠른 추론 속도 |
 
-### Async Generation
+### 비동기 생성
 
-Embeddings are generated asynchronously in background:
+임베딩은 백그라운드에서 비동기 생성:
 
 ```typescript
 async function addObservation(obs: CreateObservation) {
-  // 1. Save immediately (without embedding)
+  // 1. 즉시 저장 (embedding 없이)
   const saved = await store.insert(obs);
 
-  // 2. Generate embedding in background
+  // 2. 백그라운드에서 embedding 생성
   queueMicrotask(async () => {
     const embedding = await embedder.encode(obs.content);
     await store.updateEmbedding(saved.id, embedding);
@@ -129,7 +127,7 @@ async function addObservation(obs: CreateObservation) {
 }
 ```
 
-### Local Execution
+### 로컬 실행
 
 ```typescript
 import { pipeline } from '@xenova/transformers';
@@ -150,16 +148,16 @@ async function encode(text: string): Promise<number[]> {
 
 ## Compressor
 
-### Compression Strategy: Type-based
+### 압축 전략: 유형 기반
 
-| Type | Compression Method |
-|------|-------------------|
-| `tool_use` | Tool name + result summary |
-| `bash` | Command + output summary |
-| `error` | Keep full (for debugging) |
-| `success` | Keep full (success patterns) |
+| 유형 | 압축 방식 |
+|------|----------|
+| `tool_use` | 도구명 + 결과 요약 |
+| `bash` | 명령어 + 출력 요약 |
+| `error` | 전체 유지 (디버깅용) |
+| `success` | 전체 유지 (성공 패턴) |
 
-### Interface
+### 인터페이스
 
 ```typescript
 interface Compressor {
@@ -170,6 +168,6 @@ interface Compressor {
 
 ### Context Budget
 
-- Limit: 60% of context window
-- On exceed: Auto-compress
-- Priority: Oldest first
+- 상한: context window의 60%
+- 초과 시: 자동 압축 실행
+- 우선순위: 오래된 것부터 압축

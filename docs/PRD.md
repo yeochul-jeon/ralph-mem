@@ -1,52 +1,54 @@
 # ralph-mem PRD (Product Requirements Document)
 
-## 1. 개요
+**[한국어 버전 (Korean)](./PRD.ko.md)**
 
-### 1.1 제품명
+## 1. Overview
 
-**ralph-mem** - Claude Code를 위한 지속적 컨텍스트 관리 플러그인
+### 1.1 Product Name
 
-### 1.2 문제 정의
+**ralph-mem** - A persistent context management plugin for Claude Code
 
-LLM 기반 코딩 에이전트는 다음과 같은 핵심 한계를 가진다:
+### 1.2 Problem Definition
 
-| 문제              | 설명                                                         |
-| ----------------- | ------------------------------------------------------------ |
-| **Context Rot**   | 누적된 불필요한 정보로 인한 모델 성능 저하                   |
-| **Compaction**    | context window의 60-70% 초과 시 출력 품질 급락 ("dumb zone") |
-| **Forgetfulness** | 세션 간 작업 맥락 손실                                       |
-| **One-shot 실패** | 복잡한 작업에서 단일 시도로는 성공률 저조                    |
+LLM-based coding agents have the following core limitations:
 
-### 1.3 솔루션
+| Problem           | Description                                                          |
+| ----------------- | -------------------------------------------------------------------- |
+| **Context Rot**   | Model performance degradation due to accumulated irrelevant info     |
+| **Compaction**    | Output quality drops sharply when context window exceeds 60-70% ("dumb zone") |
+| **Forgetfulness** | Loss of work context between sessions                                |
+| **One-shot Failure** | Low success rate for complex tasks in single attempts             |
 
-[claude-mem](https://github.com/thedotmack/claude-mem)의 "지능적 컨텍스트 관리"와 [Ralph Loop](https://ghuntley.com/ralph/)의 "끈질긴 반복" 철학을 레이어로 분리하여 결합:
+### 1.3 Solution
 
-1. **Core Layer**: 항상 동작하는 메모리 저장/검색 인프라
-2. **Hook Layer**: 패시브하게 컨텍스트를 주입/기록하는 자동화 레이어
-3. **Feature Layer**: 명시적으로 활성화하는 Ralph Loop 기능
+Combines [claude-mem](https://github.com/thedotmack/claude-mem)'s "intelligent context management" with [Ralph Loop](https://ghuntley.com/ralph/)'s "persistent iteration" philosophy into separate layers:
 
----
-
-## 2. 목표 및 비목표
-
-### 2.1 목표
-
-1. 세션 간 지속적 메모리를 통한 컨텍스트 연속성 보장 (Core)
-2. Hook 기반 자동 컨텍스트 주입/기록 (Hook Layer)
-3. 성공 기준 기반 자동 반복 실행 지원 (Feature Layer)
-4. Context rot 및 compaction 문제 자동 완화
-
-### 2.2 비목표
-
-1. Claude Code 외 다른 AI 에이전트 지원 (v1 범위 외)
-2. 멀티 에이전트 오케스트레이션 ("Gas Town") (v2 이후)
-3. 클라우드 기반 메모리 동기화 (로컬 전용)
+1. **Core Layer**: Always-on memory storage/retrieval infrastructure
+2. **Hook Layer**: Passive automation layer for context injection/recording
+3. **Feature Layer**: Explicitly activated Ralph Loop functionality
 
 ---
 
-## 3. 아키텍처 레이어
+## 2. Goals and Non-Goals
 
-### 3.1 레이어 개요
+### 2.1 Goals
+
+1. Ensure context continuity through persistent cross-session memory (Core)
+2. Hook-based automatic context injection/recording (Hook Layer)
+3. Support automatic iterative execution based on success criteria (Feature Layer)
+4. Automatically mitigate context rot and compaction issues
+
+### 2.2 Non-Goals
+
+1. Support for AI agents other than Claude Code (out of v1 scope)
+2. Multi-agent orchestration ("Gas Town") (v2+)
+3. Cloud-based memory synchronization (local only)
+
+---
+
+## 3. Architecture Layers
+
+### 3.1 Layer Overview
 
 ```mermaid
 flowchart LR
@@ -79,16 +81,16 @@ flowchart LR
     Search --> DB
 ```
 
-### 3.2 레이어 비교
+### 3.2 Layer Comparison
 
-| 구분       | Core Layer           | Hook Layer              | Feature Layer        |
+| Aspect     | Core Layer           | Hook Layer              | Feature Layer        |
 | ---------- | -------------------- | ----------------------- | -------------------- |
-| **동작**   | 항상                 | 항상 (패시브)           | 명시적 활성화        |
-| **역할**   | 저장/검색 인프라     | 자동 주입/기록          | 목표 달성까지 반복   |
-| **트리거** | API 호출             | Claude Code 이벤트      | `/ralph start`       |
-| **의존성** | 없음                 | Core Layer              | Core + Hook Layer    |
+| **Operation** | Always            | Always (passive)        | Explicit activation  |
+| **Role**   | Storage/retrieval    | Auto injection/recording | Repeat until goal    |
+| **Trigger** | API call            | Claude Code events      | `/ralph start`       |
+| **Dependencies** | None           | Core Layer              | Core + Hook Layer    |
 
-### 3.3 레이어 간 상호작용
+### 3.3 Inter-Layer Interaction
 
 ```mermaid
 sequenceDiagram
@@ -97,31 +99,31 @@ sequenceDiagram
     participant C as Core Layer
     participant R as Ralph Loop
 
-    Note over H,C: 일반 세션 (Hook + Core만 동작)
-    U->>H: 프롬프트 입력
-    H->>C: 관련 메모리 검색
-    C-->>H: 컨텍스트 반환
-    H->>U: 컨텍스트 주입된 프롬프트
-    U->>H: 도구 사용 완료
-    H->>C: 관찰 기록
+    Note over H,C: Normal Session (only Hook + Core operate)
+    U->>H: Enter prompt
+    H->>C: Search related memory
+    C-->>H: Return context
+    H->>U: Prompt with injected context
+    U->>H: Tool use complete
+    H->>C: Record observation
 
-    Note over R: Ralph Loop 활성화 시
-    U->>R: /ralph start "목표"
-    R->>C: 컨텍스트 요청
-    R->>U: 반복 실행
-    R->>C: 각 iteration 결과 저장
-    R->>H: Hook 이벤트 발생
-    H->>C: 관찰 기록
+    Note over R: When Ralph Loop is activated
+    U->>R: /ralph start "goal"
+    R->>C: Request context
+    R->>U: Iterative execution
+    R->>C: Save each iteration result
+    R->>H: Trigger hook events
+    H->>C: Record observations
 ```
 
 ---
 
-## 4. Core Layer: 메모리 시스템
+## 4. Core Layer: Memory System
 
 ### 4.1 Storage Schema
 
 ```sql
--- 세션 테이블
+-- Sessions table
 CREATE TABLE sessions (
     id TEXT PRIMARY KEY,
     project_path TEXT NOT NULL,
@@ -131,7 +133,7 @@ CREATE TABLE sessions (
     tags TEXT  -- JSON array
 );
 
--- 관찰 테이블
+-- Observations table
 CREATE TABLE observations (
     id TEXT PRIMARY KEY,
     session_id TEXT REFERENCES sessions(id),
@@ -141,7 +143,7 @@ CREATE TABLE observations (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Loop 실행 테이블
+-- Loop runs table
 CREATE TABLE loop_runs (
     id TEXT PRIMARY KEY,
     session_id TEXT REFERENCES sessions(id),
@@ -153,7 +155,7 @@ CREATE TABLE loop_runs (
     ended_at DATETIME
 );
 
--- FTS5 전문 검색
+-- FTS5 full-text search
 CREATE VIRTUAL TABLE observations_fts USING fts5(
     content,
     content=observations,
@@ -161,7 +163,7 @@ CREATE VIRTUAL TABLE observations_fts USING fts5(
 );
 ```
 
-### 4.2 메모리 계층 구조 (Progressive Disclosure)
+### 4.2 Memory Hierarchy (Progressive Disclosure)
 
 ```mermaid
 flowchart TB
@@ -205,80 +207,80 @@ interface SearchResult {
 
 ### 4.4 Context Budget Enforcement
 
-| 영역                  | 비율 |
-| --------------------- | ---- |
-| System Prompt         | 10%  |
-| Injected Memory       | 15%  |
-| Current Task Context  | 35%  |
-| Reserved for Response | 40%  |
+| Area                  | Ratio |
+| --------------------- | ----- |
+| System Prompt         | 10%   |
+| Injected Memory       | 15%   |
+| Current Task Context  | 35%   |
+| Reserved for Response | 40%   |
 
 **Context Trimming Strategy:**
 
-| 전략            | 적용 시점   | 방법                     |
-| --------------- | ----------- | ------------------------ |
-| **Recency**     | 기본        | 오래된 컨텍스트부터 제거 |
-| **Relevance**   | 검색 시     | 관련성 낮은 항목 제외    |
-| **Compression** | 임계치 도달 | AI 요약으로 압축         |
-| **Selective**   | Loop 중     | 성공/실패 핵심만 유지    |
+| Strategy        | Application   | Method                        |
+| --------------- | ------------- | ----------------------------- |
+| **Recency**     | Default       | Remove older context first    |
+| **Relevance**   | During search | Exclude low-relevance items   |
+| **Compression** | At threshold  | AI summary compression        |
+| **Selective**   | During Loop   | Keep only success/failure key points |
 
 ---
 
-## 5. Hook Layer: 자동 컨텍스트 관리
+## 5. Hook Layer: Automatic Context Management
 
 ### 5.1 Lifecycle Hooks
 
-| Hook               | 시점             | 동작                             |
-| ------------------ | ---------------- | -------------------------------- |
-| `SessionStart`     | 세션 시작        | 세션 생성, 프로젝트 컨텍스트 로드 |
-| `UserPromptSubmit` | 프롬프트 제출 전 | 관련 메모리 검색 및 주입         |
-| `PostToolUse`      | 도구 사용 후     | 도구 결과를 관찰로 기록          |
-| `SessionEnd`       | 세션 종료        | 세션 요약 생성 및 저장           |
+| Hook               | Timing           | Action                            |
+| ------------------ | ---------------- | --------------------------------- |
+| `SessionStart`     | Session start    | Create session, load project context |
+| `UserPromptSubmit` | Before prompt    | Search and inject related memory  |
+| `PostToolUse`      | After tool use   | Record tool result as observation |
+| `SessionEnd`       | Session end      | Generate and save session summary |
 
-### 5.2 UserPromptSubmit 상세
+### 5.2 UserPromptSubmit Details
 
 ```mermaid
 flowchart LR
-    A[User Prompt] --> B{프로젝트 감지}
-    B --> C[관련 메모리 검색]
-    C --> D{토큰 예산 확인}
-    D -->|예산 내| E[Layer 1-3 주입]
-    D -->|초과| F[Layer 1만 주입]
-    E --> G[보강된 프롬프트]
+    A[User Prompt] --> B{Detect Project}
+    B --> C[Search Related Memory]
+    C --> D{Check Token Budget}
+    D -->|Within Budget| E[Inject Layers 1-3]
+    D -->|Over Budget| F[Inject Layer 1 Only]
+    E --> G[Enhanced Prompt]
     F --> G
 ```
 
-**주입되는 컨텍스트:**
-- 최근 세션 요약 (동일 프로젝트)
-- 관련 관찰 (키워드 매칭)
-- 진행 중인 Loop 상태 (있는 경우)
+**Injected Context:**
+- Recent session summaries (same project)
+- Related observations (keyword matching)
+- Active Loop status (if any)
 
-### 5.3 PostToolUse 상세
+### 5.3 PostToolUse Details
 
 ```mermaid
 flowchart LR
-    A[Tool Result] --> B{결과 유형 분류}
-    B -->|성공| C[success 관찰]
-    B -->|에러| D[error 관찰]
-    B -->|일반| E[tool_use 관찰]
-    C --> F[메모리 저장]
+    A[Tool Result] --> B{Classify Result Type}
+    B -->|Success| C[success observation]
+    B -->|Error| D[error observation]
+    B -->|General| E[tool_use observation]
+    C --> F[Save to Memory]
     D --> F
     E --> F
-    F --> G{private 태그?}
-    G -->|Yes| H[저장 제외]
-    G -->|No| I[FTS 인덱싱]
+    F --> G{private tag?}
+    G -->|Yes| H[Exclude from Storage]
+    G -->|No| I[FTS Indexing]
 ```
 
-**기록되는 정보:**
-- 도구 이름 및 파라미터
-- 실행 결과 (성공/실패)
-- 관련 파일 경로
-- 에러 메시지 (있는 경우)
+**Recorded Information:**
+- Tool name and parameters
+- Execution result (success/failure)
+- Related file paths
+- Error messages (if any)
 
 ---
 
 ## 6. Feature Layer: Ralph Loop
 
-### 6.1 Ralph Loop 원리
+### 6.1 Ralph Loop Principle
 
 ```mermaid
 flowchart TB
@@ -291,55 +293,55 @@ flowchart TB
     end
 ```
 
-**핵심 원칙:**
+**Core Principles:**
 
-- 단일 목표 집중 (Single Goal Focus)
-- 결정론적 컨텍스트 관리 (Deterministic Context Allocation)
-- 성공 기준 명시 (Explicit Success Criteria)
-- 과열 방지 (Overbaking Prevention)
+- Single Goal Focus
+- Deterministic Context Allocation
+- Explicit Success Criteria
+- Overbaking Prevention
 
 ### 6.2 Loop Configuration
 
 ```yaml
 ralph:
-  max_iterations: 10          # 최대 반복 횟수
+  max_iterations: 10          # Maximum iterations
   success_criteria:
-    - type: test_pass         # 테스트 통과
-    - type: build_success     # 빌드 성공
-    - type: custom            # 사용자 정의 조건
+    - type: test_pass         # Test pass
+    - type: build_success     # Build success
+    - type: custom            # Custom condition
       command: "npm run lint"
       expected_exit_code: 0
-  context_budget: 0.6         # context window 사용률 상한 (60%)
-  cooldown_ms: 1000           # 반복 간 대기 시간
+  context_budget: 0.6         # Context window usage limit (60%)
+  cooldown_ms: 1000           # Wait time between iterations
 ```
 
 ### 6.3 Loop Commands
 
-| Command               | 설명                        |
-| --------------------- | --------------------------- |
-| `/ralph start <goal>` | 목표와 함께 Ralph Loop 시작 |
-| `/ralph stop`         | 현재 Loop 중단              |
-| `/ralph status`       | Loop 상태 및 진행률 확인    |
-| `/ralph config`       | Loop 설정 조회/변경         |
+| Command               | Description                  |
+| --------------------- | ---------------------------- |
+| `/ralph start <goal>` | Start Ralph Loop with goal   |
+| `/ralph stop`         | Stop current Loop            |
+| `/ralph status`       | Check Loop status & progress |
+| `/ralph config`       | View/modify Loop settings    |
 
 ### 6.4 Success Criteria Types
 
-| Type            | 설명             | 예시                 |
+| Type            | Description      | Example              |
 | --------------- | ---------------- | -------------------- |
-| `test_pass`     | 테스트 명령 성공 | `npm test`, `pytest` |
-| `build_success` | 빌드 명령 성공   | `npm run build`      |
-| `lint_clean`    | Lint 오류 없음   | `eslint`, `ruff`     |
-| `type_check`    | 타입 체크 통과   | `tsc --noEmit`       |
-| `custom`        | 사용자 정의 명령 | 임의 shell command   |
-| `marker`        | 특정 출력 마커   | `[RALPH_SUCCESS]`    |
+| `test_pass`     | Test command passes | `npm test`, `pytest` |
+| `build_success` | Build command passes | `npm run build`     |
+| `lint_clean`    | No lint errors   | `eslint`, `ruff`     |
+| `type_check`    | Type check passes | `tsc --noEmit`      |
+| `custom`        | User-defined command | Any shell command   |
+| `marker`        | Specific output marker | `[RALPH_SUCCESS]`  |
 
-### 6.5 Ralph Loop와 Hook Layer 통합
+### 6.5 Ralph Loop and Hook Layer Integration
 
-Ralph Loop 실행 중에도 Hook Layer가 동작:
+Hook Layer operates during Ralph Loop execution:
 
-1. 각 iteration에서 `PostToolUse` hook이 도구 결과 기록
-2. 다음 iteration에서 `UserPromptSubmit` hook이 이전 결과 주입
-3. Loop 종료 시 전체 실행 기록이 메모리에 저장
+1. `PostToolUse` hook records tool results for each iteration
+2. `UserPromptSubmit` hook injects previous results for next iteration
+3. Entire execution record is saved to memory on Loop completion
 
 ```mermaid
 sequenceDiagram
@@ -351,62 +353,62 @@ sequenceDiagram
     U->>R: /ralph start "Add JWT auth"
 
     loop Each Iteration
-        R->>H: 프롬프트 생성
-        H->>C: 관련 컨텍스트 검색
-        C-->>H: 이전 iteration 결과 포함
-        H-->>R: 보강된 프롬프트
-        R->>R: Agent 실행
-        R->>H: PostToolUse 이벤트
-        H->>C: 결과 저장
-        R->>R: 성공 기준 확인
+        R->>H: Generate prompt
+        H->>C: Search related context
+        C-->>H: Include previous iteration results
+        H-->>R: Enhanced prompt
+        R->>R: Execute Agent
+        R->>H: PostToolUse event
+        H->>C: Save results
+        R->>R: Check success criteria
     end
 
-    R->>C: Loop 완료 기록
-    R-->>U: 결과 반환
+    R->>C: Record Loop completion
+    R-->>U: Return results
 ```
 
 ---
 
 ## 7. Skills (Slash Commands)
 
-| Skill         | 레이어  | 설명                                 |
+| Skill         | Layer   | Description                          |
 | ------------- | ------- | ------------------------------------ |
-| `/ralph`      | Feature | Ralph Loop 제어                      |
-| `/mem-search` | Core    | 메모리 검색 (Progressive Disclosure) |
-| `/mem-inject` | Core    | 수동 컨텍스트 주입                   |
-| `/mem-forget` | Core    | 특정 메모리 제거                     |
-| `/mem-status` | Core    | 메모리 사용량 및 상태                |
+| `/ralph`      | Feature | Ralph Loop control                   |
+| `/mem-search` | Core    | Memory search (Progressive Disclosure) |
+| `/mem-inject` | Core    | Manual context injection             |
+| `/mem-forget` | Core    | Remove specific memory               |
+| `/mem-status` | Core    | Memory usage and status              |
 
 ---
 
-## 8. 비기능 요구사항
+## 8. Non-Functional Requirements
 
-### 8.1 성능
+### 8.1 Performance
 
-| 지표                       | 목표    |
+| Metric                     | Target  |
 | -------------------------- | ------- |
-| 메모리 검색 응답 시간      | < 200ms |
-| Hook 실행 오버헤드         | < 50ms  |
-| 세션 시작 시 메모리 주입   | < 500ms |
-| SQLite DB 크기 (1000 세션) | < 100MB |
+| Memory search response     | < 200ms |
+| Hook execution overhead    | < 50ms  |
+| Memory injection at session start | < 500ms |
+| SQLite DB size (1000 sessions) | < 100MB |
 
-### 8.2 안정성
+### 8.2 Reliability
 
-- Loop 중 비정상 종료 시 상태 자동 복구
-- DB 손상 시 자동 백업 복원
-- Hook 실패 시 세션 계속 진행 (graceful degradation)
+- Automatic state recovery on abnormal Loop termination
+- Automatic backup restoration on DB corruption
+- Session continues on hook failure (graceful degradation)
 
-### 8.3 보안
+### 8.3 Security
 
-- `<private>` 태그로 민감 정보 저장 제외
-- 로컬 전용 저장 (네트워크 전송 없음)
-- DB 파일 접근 권한 제한 (600)
+- `<private>` tag to exclude sensitive info from storage
+- Local-only storage (no network transmission)
+- DB file access restricted (600)
 
 ---
 
-## 9. 기술 아키텍처
+## 9. Technical Architecture
 
-### 9.1 컴포넌트 다이어그램
+### 9.1 Component Diagram
 
 ```mermaid
 flowchart TB
@@ -431,7 +433,7 @@ flowchart TB
 
         LoopEngine --> MemStore
         LoopEngine --> SearchEngine
-        LoopEngine -.->|이벤트| Hooks
+        LoopEngine -.->|events| Hooks
 
         Hooks --> MemStore
         Hooks --> SearchEngine
@@ -442,15 +444,15 @@ flowchart TB
     end
 ```
 
-### 9.2 파일 구조
+### 9.2 File Structure
 
 ```text
 ralph-mem/
-├── plugin.json              # Claude Code 플러그인 매니페스트
+├── plugin.json              # Claude Code plugin manifest
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── index.ts             # 플러그인 진입점
+│   ├── index.ts             # Plugin entry point
 │   ├── core/                # Core Layer
 │   │   ├── store.ts         # Memory Store
 │   │   ├── search.ts        # Search Engine
@@ -488,20 +490,20 @@ ralph-mem/
     └── features/
 ```
 
-### 9.3 기술 스택
+### 9.3 Tech Stack
 
-| 분류     | 기술          | 이유                        |
-| -------- | ------------- | --------------------------- |
-| Runtime  | Bun           | 빠른 시작 시간, SQLite 내장 |
-| Language | TypeScript    | 타입 안정성                 |
-| Database | SQLite + FTS5 | 로컬 전용, 전문 검색        |
-| Testing  | Vitest        | Bun 호환, 빠른 실행         |
+| Category | Technology     | Reason                              |
+| -------- | -------------- | ----------------------------------- |
+| Runtime  | Bun            | Fast startup, built-in SQLite       |
+| Language | TypeScript     | Type safety                         |
+| Database | SQLite + FTS5  | Local-only, full-text search        |
+| Testing  | Bun Test       | Bun compatible, fast execution      |
 
 ---
 
-## 10. 사용자 시나리오
+## 10. User Scenarios
 
-### 10.1 시나리오 1: Hook만 사용 (일반 세션)
+### 10.1 Scenario 1: Hooks Only (Normal Session)
 
 ```mermaid
 sequenceDiagram
@@ -509,25 +511,25 @@ sequenceDiagram
     participant H as Hooks
     participant C as Core
 
-    U->>H: 새 세션 시작
-    H->>C: 세션 생성
-    C-->>H: 이전 세션 요약 로드
+    U->>H: Start new session
+    H->>C: Create session
+    C-->>H: Load previous session summary
 
-    U->>H: "auth.ts 수정해줘"
-    H->>C: 관련 메모리 검색
-    C-->>H: "지난번 JWT 구현 완료"
-    H-->>U: 컨텍스트 포함 프롬프트
+    U->>H: "Modify auth.ts"
+    H->>C: Search related memory
+    C-->>H: "JWT implementation completed last time"
+    H-->>U: Prompt with context
 
-    Note over U: Claude가 작업 수행
+    Note over U: Claude performs task
 
-    U->>H: 도구 사용 완료
-    H->>C: 관찰 기록
+    U->>H: Tool use complete
+    H->>C: Record observation
 
-    U->>H: 세션 종료
-    H->>C: 요약 생성 및 저장
+    U->>H: End session
+    H->>C: Generate and save summary
 ```
 
-### 10.2 시나리오 2: Ralph Loop 활성화
+### 10.2 Scenario 2: Ralph Loop Activated
 
 ```mermaid
 sequenceDiagram
@@ -537,74 +539,74 @@ sequenceDiagram
     participant C as Core
 
     U->>R: /ralph start "Add JWT auth"
-    R->>C: Loop 시작 기록
+    R->>C: Record Loop start
 
     loop Iteration 1-3
-        R->>H: 프롬프트 생성
-        H->>C: 컨텍스트 검색
-        C-->>H: 이전 결과 포함
-        H-->>R: 보강된 프롬프트
-        R->>R: 실행 및 테스트
+        R->>H: Generate prompt
+        H->>C: Search context
+        C-->>H: Include previous results
+        H-->>R: Enhanced prompt
+        R->>R: Execute and test
         R->>H: PostToolUse
-        H->>C: 결과 저장
+        H->>C: Save results
     end
 
-    R->>C: Loop 완료 (성공)
-    R-->>U: "3회 반복 후 성공"
+    R->>C: Loop complete (success)
+    R-->>U: "Success after 3 iterations"
 ```
 
-### 10.3 시나리오 3: 메모리 검색
+### 10.3 Scenario 3: Memory Search
 
 ```text
-사용자: /mem-search "authentication error handling"
+User: /mem-search "authentication error handling"
 
-[Layer 1 결과 - 50 tokens]
+[Layer 1 Result - 50 tokens]
 Found 5 relevant observations:
 1. [obs-a1b2] Session 2024-01-15: JWT error handling
 2. [obs-c3d4] Session 2024-01-14: Auth middleware errors
 3. [obs-e5f6] Session 2024-01-10: Login validation
 ...
 
-사용자: /mem-search --layer 3 obs-a1b2
+User: /mem-search --layer 3 obs-a1b2
 
-[Layer 3 결과 - 800 tokens]
+[Layer 3 Result - 800 tokens]
 Full observation:
-- Session: 2024-01-15 (JWT 인증 구현)
+- Session: 2024-01-15 (JWT auth implementation)
 - Type: tool_use
 - Content:
-  auth.ts에 다음 에러 핸들링 추가:
-  - TokenExpiredError → 401 + refresh 안내
-  - InvalidTokenError → 401 + 재로그인 요청
+  Added following error handling to auth.ts:
+  - TokenExpiredError → 401 + refresh guidance
+  - InvalidTokenError → 401 + re-login request
   ...
 ```
 
 ---
 
-## 11. 태스크 리스트
+## 11. Task List
 
-> 상세 태스크는 [TASKS.md](../TASKS.md)에서 관리합니다.
+> Detailed tasks are managed in [TASKS.md](../TASKS.md).
 
-| Phase                 | 태스크 수 | 주요 내용                                    |
-| --------------------- | --------- | -------------------------------------------- |
-| Phase 1: Core Layer   | 6         | DB, Memory Store, Search Engine              |
-| Phase 2: Hook Layer   | 6         | SessionStart, UserPromptSubmit, PostToolUse  |
-| Phase 3: Feature Layer | 8        | Ralph Loop Engine, Success Criteria          |
-| Phase 4: Polish       | 12        | 테스트, 추가 Skills, 문서화                  |
-
----
-
-## 12. 성공 지표
-
-| 지표                 | 목표   | 측정 방법                   |
-| -------------------- | ------ | --------------------------- |
-| 메모리 주입 활용률   | > 50%  | 주입된 컨텍스트 실제 참조율 |
-| Hook 실행 성공률     | > 99%  | 실패 없이 완료된 Hook 비율  |
-| Loop 성공률          | > 70%  | 성공/전체 Loop 비율         |
-| 평균 Loop 반복 횟수  | < 5회  | 성공 Loop의 평균 iteration  |
+| Phase                 | Tasks | Key Contents                              |
+| --------------------- | ----- | ----------------------------------------- |
+| Phase 1: Core Layer   | 6     | DB, Memory Store, Search Engine           |
+| Phase 2: Hook Layer   | 6     | SessionStart, UserPromptSubmit, PostToolUse |
+| Phase 3: Feature Layer | 8    | Ralph Loop Engine, Success Criteria       |
+| Phase 4: Polish       | 12    | Tests, Additional Skills, Documentation   |
 
 ---
 
-## 13. 참고 자료
+## 12. Success Metrics
+
+| Metric               | Target | Measurement                   |
+| -------------------- | ------ | ----------------------------- |
+| Memory injection usage | > 50% | Actual reference rate of injected context |
+| Hook execution success | > 99% | Ratio of hooks completed without failure |
+| Loop success rate    | > 70%  | Success/total Loop ratio      |
+| Average Loop iterations | < 5  | Average iterations for successful Loops |
+
+---
+
+## 13. References
 
 - [Ralph Loop - Geoffrey Huntley](https://ghuntley.com/ralph/)
 - [claude-mem - thedotmack](https://github.com/thedotmack/claude-mem)
@@ -613,10 +615,10 @@ Full observation:
 
 ---
 
-## 14. 변경 이력
+## 14. Change History
 
-| 버전 | 날짜       | 작성자 | 변경 내용                                        |
-| ---- | ---------- | ------ | ------------------------------------------------ |
-| 0.1  | 2025-01-17 | -      | 초안 작성                                        |
-| 0.2  | 2025-01-17 | -      | 다이어그램 Mermaid 변환, 마일스톤→태스크 리스트  |
-| 0.3  | 2025-01-17 | -      | 3-Layer 아키텍처 분리 (Core/Hook/Feature)        |
+| Version | Date       | Author | Changes                                      |
+| ------- | ---------- | ------ | -------------------------------------------- |
+| 0.1     | 2025-01-17 | -      | Initial draft                                |
+| 0.2     | 2025-01-17 | -      | Convert diagrams to Mermaid, milestones→tasks |
+| 0.3     | 2025-01-17 | -      | 3-Layer architecture separation (Core/Hook/Feature) |

@@ -1,18 +1,20 @@
 # Error Handling
 
-> 에러 처리 전략
+> Error handling strategy
 
-## 에러 심각도
+**[한국어 버전 (Korean)](./error-handling.ko.md)**
 
-### 3단계 분류
+## Error Severity
 
-| 레벨 | 심각도 | 예시 | 동작 |
-|------|--------|------|------|
-| Low | 낮음 | 임베딩 생성 실패 | 로그만, 계속 진행 |
-| Medium | 중간 | FTS5 검색 실패 | 폴백 시도 후 알림 |
-| High | 높음 | DB 연결 실패 | 즉시 알림, 사용자 선택 |
+### 3-Level Classification
 
-### 레벨별 처리
+| Level | Severity | Example | Action |
+|-------|----------|---------|--------|
+| Low | Low | Embedding generation failure | Log only, continue |
+| Medium | Medium | FTS5 search failure | Try fallback, then notify |
+| High | High | DB connection failure | Immediate notification, user choice |
+
+### Level-based Handling
 
 ```typescript
 type ErrorLevel = 'low' | 'medium' | 'high';
@@ -22,7 +24,7 @@ interface ErrorHandler {
   handle(error: Error): Promise<ErrorResult>;
 }
 
-// Low: 로그만
+// Low: Log only
 const lowHandler: ErrorHandler = {
   level: 'low',
   async handle(error) {
@@ -31,7 +33,7 @@ const lowHandler: ErrorHandler = {
   }
 };
 
-// Medium: 폴백 시도
+// Medium: Try fallback
 const mediumHandler: ErrorHandler = {
   level: 'medium',
   async handle(error) {
@@ -40,19 +42,19 @@ const mediumHandler: ErrorHandler = {
     if (fallback.success) {
       return { action: 'continue', result: fallback.result };
     }
-    await notify(`⚠️ ${error.message} (폴백 실패)`);
+    await notify(`⚠️ ${error.message} (fallback failed)`);
     return { action: 'continue_degraded' };
   }
 };
 
-// High: 사용자 선택
+// High: User choice
 const highHandler: ErrorHandler = {
   level: 'high',
   async handle(error) {
     logger.error('Critical error', { error });
     const choice = await askUser({
       message: `❌ ${error.message}`,
-      options: ['재시도', '무시하고 계속', '중단']
+      options: ['Retry', 'Continue without', 'Abort']
     });
     return { action: choice };
   }
@@ -61,58 +63,58 @@ const highHandler: ErrorHandler = {
 
 ## Graceful Degradation
 
-### 사용자 선택 기반
+### User Choice Based
 
-심각한 에러 발생 시 사용자에게 선택권 제공:
-
-```
-❌ 데이터베이스 연결 실패
-
-선택:
-  [1] 재시도
-  [2] 메모리 기능 없이 계속
-  [3] 세션 중단
-
-선택: _
-```
-
-### 기능별 폴백
-
-| 기능 | 에러 | 폴백 동작 |
-|------|------|----------|
-| Embedding 생성 | 모델 로드 실패 | FTS5만 사용 |
-| FTS5 검색 | 인덱스 손상 | 전체 스캔 |
-| DB 쓰기 | 디스크 풀 | 메모리 큐 저장 |
-| 세션 요약 | Claude API 실패 | 수동 요약 건너뛰기 |
-
-### 폴백 알림
+Provide user choice on severe errors:
 
 ```
-⚠️ 임베딩 모델 로드 실패
-└─ 폴백: FTS5 전문 검색만 사용합니다.
-   의미 기반 검색이 제한됩니다.
+❌ Database connection failed
+
+Options:
+  [1] Retry
+  [2] Continue without memory features
+  [3] Abort session
+
+Selection: _
 ```
 
-## 로깅
+### Feature-specific Fallback
 
-### 로깅 레벨
+| Feature | Error | Fallback Action |
+|---------|-------|-----------------|
+| Embedding generation | Model load failure | Use FTS5 only |
+| FTS5 search | Index corruption | Full scan |
+| DB write | Disk full | Store in memory queue |
+| Session summary | Claude API failure | Skip manual summary |
 
-| 레벨 | 내용 | 기본 활성화 |
-|------|------|------------|
-| Debug | 상세 디버깅 정보 | ❌ |
-| Info | 일반 작업 정보 | ✅ |
-| Warn | 경고 (Low 에러) | ✅ |
-| Error | 에러 (Medium/High) | ✅ |
+### Fallback Notification
 
-### 로그 위치
+```
+⚠️ Embedding model load failed
+└─ Fallback: Using FTS5 full-text search only.
+   Semantic-based search will be limited.
+```
+
+## Logging
+
+### Logging Levels
+
+| Level | Content | Default Enabled |
+|-------|---------|-----------------|
+| Debug | Detailed debugging info | ❌ |
+| Info | General operation info | ✅ |
+| Warn | Warnings (Low errors) | ✅ |
+| Error | Errors (Medium/High) | ✅ |
+
+### Log Location
 
 ```
 ~/.config/ralph-mem/logs/
-├── ralph-mem.log      # 현재 로그
-└── ralph-mem.1.log    # 로테이션된 로그
+├── ralph-mem.log      # Current log
+└── ralph-mem.1.log    # Rotated log
 ```
 
-### 로그 형식
+### Log Format
 
 ```
 [2025-01-15T10:30:00.000Z] [INFO] Session started: sess-abc123
@@ -120,9 +122,9 @@ const highHandler: ErrorHandler = {
 [2025-01-15T10:30:05.000Z] [ERROR] FTS5 search failed: SQLITE_CORRUPT
 ```
 
-## Ralph Loop 에러
+## Ralph Loop Errors
 
-### 테스트 실행 실패
+### Test Execution Failure
 
 ```typescript
 async function runTest(command: string): Promise<TestResult> {
@@ -130,32 +132,32 @@ async function runTest(command: string): Promise<TestResult> {
     const output = await exec(command);
     return { success: true, output };
   } catch (error) {
-    // 테스트 실패는 에러가 아님 (정상 플로우)
+    // Test failure is not an error (normal flow)
     if (error.code === 1) {
       return { success: false, output: error.stdout };
     }
-    // 명령어 자체 실행 실패
+    // Command execution itself failed
     throw new LoopError('test_command_failed', error.message);
   }
 }
 ```
 
-### Loop 에러 처리
+### Loop Error Handling
 
 ```
-❌ Loop 에러: 테스트 명령어 실행 실패
+❌ Loop error: Test command execution failed
 
-원인: Command not found: npm
-해결:
-  1. npm이 설치되어 있는지 확인
-  2. 테스트 명령어 수정: /ralph config
+Cause: Command not found: npm
+Resolution:
+  1. Verify npm is installed
+  2. Modify test command: /ralph config
 
-Loop가 중단되었습니다.
+Loop has been stopped.
 ```
 
-## 데이터 복구
+## Data Recovery
 
-### DB 손상 시
+### On DB Corruption
 
 ```typescript
 async function recoverDatabase(): Promise<void> {
@@ -165,11 +167,11 @@ async function recoverDatabase(): Promise<void> {
   }
 
   const choice = await askUser({
-    message: '💾 데이터베이스 손상 감지',
-    options: backups.map(b => `${b.date} (${b.size})`).concat(['새로 시작'])
+    message: '💾 Database corruption detected',
+    options: backups.map(b => `${b.date} (${b.size})`).concat(['Start fresh'])
   });
 
-  if (choice !== '새로 시작') {
+  if (choice !== 'Start fresh') {
     await restoreBackup(backups[choice]);
   } else {
     await initDatabase();

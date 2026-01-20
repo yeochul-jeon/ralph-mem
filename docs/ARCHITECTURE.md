@@ -1,14 +1,16 @@
-# ralph-mem 아키텍처
+# ralph-mem Architecture
 
-> Claude Code를 위한 지속적 컨텍스트 관리 플러그인
+> A persistent context management plugin for Claude Code
 
-## 개요
+**[한국어 버전 (Korean)](./ARCHITECTURE.ko.md)**
 
-ralph-mem은 세 가지 레이어로 구성된 플러그인입니다:
+## Overview
 
-1. **Core Layer**: 메모리 저장/검색 인프라
-2. **Hook Layer**: 자동 컨텍스트 주입/기록
-3. **Feature Layer**: Ralph Loop 반복 실행 엔진
+ralph-mem is a plugin composed of three layers:
+
+1. **Core Layer**: Memory storage/retrieval infrastructure
+2. **Hook Layer**: Automatic context injection/recording
+3. **Feature Layer**: Ralph Loop iterative execution engine
 
 ```mermaid
 flowchart TB
@@ -51,32 +53,32 @@ flowchart TB
     Core --> DB[(SQLite + FTS5)]
 ```
 
-## 디렉토리 구조
+## Directory Structure
 
 ```text
 src/
-├── index.ts                    # 플러그인 진입점
+├── index.ts                    # Plugin entry point
 ├── core/                       # Core Layer
-│   ├── store.ts               # Memory Store (세션/관찰 CRUD)
+│   ├── store.ts               # Memory Store (session/observation CRUD)
 │   ├── search.ts              # Search Engine (FTS5)
 │   ├── compressor.ts          # Context Compressor
 │   ├── embedding.ts           # Embedding Service
 │   └── db/
-│       ├── client.ts          # DB 클라이언트
-│       ├── schema.ts          # 스키마 정의
-│       ├── paths.ts           # 경로 유틸리티
-│       ├── types.ts           # 타입 정의
-│       └── migrations/        # 마이그레이션
+│       ├── client.ts          # DB client
+│       ├── schema.ts          # Schema definition
+│       ├── paths.ts           # Path utilities
+│       ├── types.ts           # Type definitions
+│       └── migrations/        # Migrations
 ├── hooks/                      # Hook Layer
-│   ├── session-start.ts       # 세션 시작 hook
-│   ├── session-end.ts         # 세션 종료 hook
-│   ├── post-tool-use.ts       # 도구 사용 후 hook
-│   └── user-prompt-submit.ts  # 프롬프트 제출 hook
+│   ├── session-start.ts       # Session start hook
+│   ├── session-end.ts         # Session end hook
+│   ├── post-tool-use.ts       # Post tool use hook
+│   └── user-prompt-submit.ts  # Prompt submit hook
 ├── features/ralph/             # Feature Layer
-│   ├── engine.ts              # Loop 엔진
-│   ├── criteria.ts            # 성공 기준 평가
-│   ├── stop-conditions.ts     # 중단 조건
-│   └── snapshot.ts            # 파일 스냅샷/롤백
+│   ├── engine.ts              # Loop engine
+│   ├── criteria.ts            # Success criteria evaluation
+│   ├── stop-conditions.ts     # Stop conditions
+│   └── snapshot.ts            # File snapshot/rollback
 ├── skills/                     # Slash Commands
 │   ├── ralph.ts               # /ralph start|stop|status
 │   ├── ralph-config.ts        # /ralph config
@@ -85,16 +87,16 @@ src/
 │   ├── mem-inject.ts          # /mem-inject
 │   └── mem-forget.ts          # /mem-forget
 └── utils/
-    ├── config.ts              # 설정 시스템
-    ├── tokens.ts              # 토큰 계산
-    └── errors.ts              # 에러 핸들링
+    ├── config.ts              # Config system
+    ├── tokens.ts              # Token calculation
+    └── errors.ts              # Error handling
 ```
 
 ## Core Layer
 
 ### Memory Store
 
-세션과 관찰(observation)의 생명주기를 관리합니다.
+Manages the lifecycle of sessions and observations.
 
 ```mermaid
 classDiagram
@@ -117,7 +119,7 @@ classDiagram
     MemoryStore --> DBClient
 ```
 
-**주요 타입:**
+**Key Types:**
 
 ```typescript
 interface Session {
@@ -140,35 +142,35 @@ interface Observation {
 
 ### Search Engine
 
-FTS5 기반 전문 검색을 제공합니다.
+Provides FTS5-based full-text search.
 
 ```mermaid
 flowchart LR
-    Query[검색 쿼리] --> Tokenize[토큰화]
-    Tokenize --> FTS5[FTS5 매칭]
-    FTS5 --> Rank[BM25 랭킹]
+    Query[Search Query] --> Tokenize[Tokenize]
+    Tokenize --> FTS5[FTS5 Match]
+    FTS5 --> Rank[BM25 Ranking]
     Rank --> Layer{Layer?}
     Layer -->|1| Index[ID + Score]
-    Layer -->|2| Timeline[시간순 컨텍스트]
-    Layer -->|3| Full[전체 내용]
+    Layer -->|2| Timeline[Chronological Context]
+    Layer -->|3| Full[Full Content]
 ```
 
 **Progressive Disclosure:**
 
-| Layer | 토큰 | 내용 |
-|-------|------|------|
-| 1 | 50-100 | ID, 점수, 요약 |
-| 2 | 200-300 | 시간순 컨텍스트 |
-| 3 | 500-1000 | 전체 내용 + 코드 |
+| Layer | Tokens | Content |
+|-------|--------|---------|
+| 1 | 50-100 | ID, score, summary |
+| 2 | 200-300 | Chronological context |
+| 3 | 500-1000 | Full content + code |
 
 ### Compressor
 
-컨텍스트 압축 및 요약을 수행합니다.
+Performs context compression and summarization.
 
 ```typescript
 interface CompressorConfig {
-  maxTokens: number;      // 최대 토큰 수
-  preserveTypes: string[]; // 유지할 타입 (error, success)
+  maxTokens: number;      // Maximum tokens
+  preserveTypes: string[]; // Types to preserve (error, success)
 }
 
 function compressContext(observations: Observation[], config: CompressorConfig): string;
@@ -176,7 +178,7 @@ function compressContext(observations: Observation[], config: CompressorConfig):
 
 ### Embedding Service
 
-의미 기반 검색을 위한 벡터 임베딩을 제공합니다.
+Provides vector embeddings for semantic search.
 
 ```typescript
 interface EmbeddingService {
@@ -187,7 +189,7 @@ interface EmbeddingService {
 
 ## Hook Layer
 
-Claude Code 이벤트에 자동으로 반응합니다.
+Automatically responds to Claude Code events.
 
 ```mermaid
 sequenceDiagram
@@ -197,13 +199,13 @@ sequenceDiagram
 
     CC->>H: SessionStart
     H->>C: createSession()
-    C-->>H: 이전 세션 컨텍스트
-    H-->>CC: 주입된 컨텍스트
+    C-->>H: Previous session context
+    H-->>CC: Injected context
 
     CC->>H: UserPromptSubmit
     H->>C: search(prompt)
-    C-->>H: 관련 메모리
-    H-->>CC: 보강된 프롬프트
+    C-->>H: Related memory
+    H-->>CC: Enhanced prompt
 
     CC->>H: PostToolUse
     H->>C: createObservation()
@@ -212,44 +214,44 @@ sequenceDiagram
     H->>C: endSession(summary)
 ```
 
-### Hook 상세
+### Hook Details
 
-| Hook | 트리거 | 동작 |
-|------|--------|------|
-| SessionStart | 세션 시작 | 세션 생성, 이전 컨텍스트 주입 |
-| UserPromptSubmit | 프롬프트 제출 전 | 관련 메모리 검색 및 주입 |
-| PostToolUse | 도구 사용 후 | 결과를 관찰로 기록 |
-| SessionEnd | 세션 종료 | 요약 생성 및 저장 |
+| Hook | Trigger | Action |
+|------|---------|--------|
+| SessionStart | Session start | Create session, inject previous context |
+| UserPromptSubmit | Before prompt submission | Search and inject related memory |
+| PostToolUse | After tool use | Record result as observation |
+| SessionEnd | Session end | Generate and save summary |
 
 ## Feature Layer (Ralph Loop)
 
-목표 달성까지 반복 실행합니다.
+Iteratively executes until goal is achieved.
 
 ```mermaid
 flowchart TB
-    Start[/ralph start goal/] --> Init[초기화]
-    Init --> Snapshot[파일 스냅샷]
-    Snapshot --> Execute[실행]
-    Execute --> Check{성공 기준?}
-    Check -->|통과| Success[완료]
-    Check -->|실패| Stop{중단 조건?}
-    Stop -->|예| Fail[실패]
-    Stop -->|아니오| Execute
-    Fail --> Rollback{롤백?}
-    Rollback -->|예| Restore[복원]
-    Rollback -->|아니오| End[종료]
+    Start[/ralph start goal/] --> Init[Initialize]
+    Init --> Snapshot[File Snapshot]
+    Snapshot --> Execute[Execute]
+    Execute --> Check{Success Criteria?}
+    Check -->|Pass| Success[Complete]
+    Check -->|Fail| Stop{Stop Condition?}
+    Stop -->|Yes| Fail[Failed]
+    Stop -->|No| Execute
+    Fail --> Rollback{Rollback?}
+    Rollback -->|Yes| Restore[Restore]
+    Rollback -->|No| End[End]
 ```
 
-### 성공 기준 (Success Criteria)
+### Success Criteria
 
 ```typescript
 type CriteriaType =
-  | "test_pass"      // 테스트 통과
-  | "build_success"  // 빌드 성공
-  | "lint_clean"     // Lint 오류 없음
-  | "type_check"     // 타입 체크 통과
-  | "custom"         // 사용자 정의
-  | "marker";        // 출력 마커
+  | "test_pass"      // Tests pass
+  | "build_success"  // Build succeeds
+  | "lint_clean"     // No lint errors
+  | "type_check"     // Type check passes
+  | "custom"         // User-defined
+  | "marker";        // Output marker
 
 interface SuccessCriteria {
   type: CriteriaType;
@@ -258,43 +260,43 @@ interface SuccessCriteria {
 }
 ```
 
-### 중단 조건 (Stop Conditions)
+### Stop Conditions
 
 ```typescript
 interface StopConditions {
-  maxIterations: number;       // 최대 반복 횟수 (기본: 10)
-  maxDuration: number;         // 최대 실행 시간 (ms)
-  noProgressThreshold: number; // 진척 없음 임계값
+  maxIterations: number;       // Maximum iterations (default: 10)
+  maxDuration: number;         // Maximum execution time (ms)
+  noProgressThreshold: number; // No-progress threshold
 }
 ```
 
-### 파일 스냅샷
+### File Snapshot
 
 ```mermaid
 flowchart LR
-    Start[Loop 시작] --> Snapshot[스냅샷 생성]
-    Snapshot --> Store[(저장)]
-    Execute[실행] --> Check{성공?}
-    Check -->|실패| Rollback[롤백 옵션]
-    Rollback --> Restore[스냅샷 복원]
+    Start[Loop Start] --> Snapshot[Create Snapshot]
+    Snapshot --> Store[(Storage)]
+    Execute[Execute] --> Check{Success?}
+    Check -->|Failure| Rollback[Rollback Option]
+    Rollback --> Restore[Restore Snapshot]
 ```
 
 ## Skills (Slash Commands)
 
-| 명령어 | 설명 |
-|--------|------|
-| `/ralph start <goal>` | Loop 시작 |
-| `/ralph stop [--rollback]` | Loop 중단 |
-| `/ralph status` | 상태 조회 |
-| `/ralph config [key] [value]` | 설정 조회/변경 |
-| `/mem-search <query> [--layer N]` | 메모리 검색 |
-| `/mem-status` | 메모리 사용량 조회 |
-| `/mem-inject <content>` | 수동 메모리 주입 |
-| `/mem-forget <id> [--confirm]` | 메모리 삭제 |
+| Command | Description |
+|---------|-------------|
+| `/ralph start <goal>` | Start Loop |
+| `/ralph stop [--rollback]` | Stop Loop |
+| `/ralph status` | Check status |
+| `/ralph config [key] [value]` | View/modify config |
+| `/mem-search <query> [--layer N]` | Search memory |
+| `/mem-status` | Check memory usage |
+| `/mem-inject <content>` | Manual memory injection |
+| `/mem-forget <id> [--confirm]` | Delete memory |
 
-## 데이터 흐름
+## Data Flow
 
-### 일반 세션
+### Normal Session
 
 ```mermaid
 sequenceDiagram
@@ -303,24 +305,24 @@ sequenceDiagram
     participant C as Core
     participant DB as SQLite
 
-    U->>H: 세션 시작
+    U->>H: Start session
     H->>C: createSession()
     C->>DB: INSERT sessions
-    C->>DB: SELECT observations (이전)
-    DB-->>C: 이전 컨텍스트
-    C-->>H: 주입 컨텍스트
-    H-->>U: 세션 준비 완료
+    C->>DB: SELECT observations (previous)
+    DB-->>C: Previous context
+    C-->>H: Injection context
+    H-->>U: Session ready
 
-    U->>H: 프롬프트 입력
+    U->>H: Enter prompt
     H->>C: search(prompt)
     C->>DB: FTS5 MATCH
-    DB-->>C: 관련 관찰
-    C-->>H: 검색 결과
-    H-->>U: 보강된 프롬프트
+    DB-->>C: Related observations
+    C-->>H: Search results
+    H-->>U: Enhanced prompt
 
-    Note over U: Claude 작업 수행
+    Note over U: Claude performs task
 
-    U->>H: 도구 사용 완료
+    U->>H: Tool use complete
     H->>C: createObservation()
     C->>DB: INSERT observations
     C->>DB: INSERT observations_fts
@@ -335,38 +337,38 @@ sequenceDiagram
     participant H as Hooks
     participant C as Core
 
-    U->>R: /ralph start "목표"
+    U->>R: /ralph start "goal"
     R->>C: createLoopRun()
-    R->>R: 파일 스냅샷
+    R->>R: File snapshot
 
-    loop 각 Iteration
-        R->>H: 프롬프트 생성
-        H->>C: 컨텍스트 검색
-        C-->>H: 이전 결과 포함
-        H-->>R: 보강된 프롬프트
-        R->>R: Agent 실행
+    loop Each Iteration
+        R->>H: Generate prompt
+        H->>C: Search context
+        C-->>H: Include previous results
+        H-->>R: Enhanced prompt
+        R->>R: Execute Agent
         R->>H: PostToolUse
-        H->>C: 결과 저장
-        R->>R: 성공 기준 확인
+        H->>C: Save results
+        R->>R: Check success criteria
     end
 
-    R->>C: updateLoopRun(완료)
-    R-->>U: 결과 반환
+    R->>C: updateLoopRun(complete)
+    R-->>U: Return results
 ```
 
-## 저장소 구조
+## Storage Structure
 
 ```text
-~/.config/ralph-mem/           # 글로벌 설정
-├── config.yaml               # 글로벌 설정
-└── memory.db                 # 글로벌 메모리 DB
+~/.config/ralph-mem/           # Global config
+├── config.yaml               # Global settings
+└── memory.db                 # Global memory DB
 
-<project>/.ralph-mem/          # 프로젝트별
-├── config.yaml               # 프로젝트 설정 (오버라이드)
-└── memory.db                 # 프로젝트 메모리 DB
+<project>/.ralph-mem/          # Per-project
+├── config.yaml               # Project settings (override)
+└── memory.db                 # Project memory DB
 ```
 
-### DB 스키마
+### DB Schema
 
 ```mermaid
 erDiagram
@@ -407,7 +409,7 @@ erDiagram
     }
 ```
 
-## 설정 시스템
+## Config System
 
 ```yaml
 # config.yaml
@@ -429,48 +431,48 @@ ralph:
     - type: build_success
 ```
 
-**우선순위**: 프로젝트 설정 > 글로벌 설정 > 기본값
+**Priority**: Project settings > Global settings > Defaults
 
-## 에러 핸들링
+## Error Handling
 
 ```mermaid
 flowchart TB
-    Error[에러 발생] --> Level{심각도?}
-    Level -->|Low| Log[로깅만]
-    Level -->|Medium| Notify[사용자 알림]
-    Level -->|High| Recover[복구 시도]
-    Recover --> Options{복구 옵션}
-    Options --> Retry[재시도]
-    Options --> Fallback[폴백]
-    Options --> Skip[건너뛰기]
+    Error[Error Occurred] --> Level{Severity?}
+    Level -->|Low| Log[Log Only]
+    Level -->|Medium| Notify[User Notification]
+    Level -->|High| Recover[Attempt Recovery]
+    Recover --> Options{Recovery Options}
+    Options --> Retry[Retry]
+    Options --> Fallback[Fallback]
+    Options --> Skip[Skip]
 ```
 
-| 심각도 | 예시 | 처리 |
-|--------|------|------|
-| Low | 캐시 미스 | 로깅 후 계속 |
-| Medium | DB 쿼리 실패 | 사용자 알림, 폴백 |
-| High | DB 손상 | 복구 옵션 제시 |
+| Severity | Example | Handling |
+|----------|---------|----------|
+| Low | Cache miss | Log and continue |
+| Medium | DB query failure | Notify user, fallback |
+| High | DB corruption | Present recovery options |
 
-## 성능 지표
+## Performance Metrics
 
-| 지표 | 목표 | 실측 |
-|------|------|------|
-| 검색 응답 (1000 obs) | < 200ms | ~0.6ms |
-| Hook 오버헤드 | < 50ms | ~9ms |
-| 세션 시작 | < 500ms | ~1ms |
-| DB 크기 (1000 세션) | < 100MB | ~60MB |
+| Metric | Target | Actual |
+|--------|--------|--------|
+| Search response (1000 obs) | < 200ms | ~0.6ms |
+| Hook overhead | < 50ms | ~9ms |
+| Session start | < 500ms | ~1ms |
+| DB size (1000 sessions) | < 100MB | ~60MB |
 
-## 기술 스택
+## Tech Stack
 
-| 분류 | 기술 | 이유 |
-|------|------|------|
-| Runtime | Bun | 빠른 시작, SQLite 내장 |
-| Language | TypeScript | 타입 안정성 |
-| Database | SQLite + FTS5 | 로컬, 전문 검색 |
-| Testing | Vitest | Bun 호환, 빠른 실행 |
+| Category | Technology | Reason |
+|----------|------------|--------|
+| Runtime | Bun | Fast startup, built-in SQLite |
+| Language | TypeScript | Type safety |
+| Database | SQLite + FTS5 | Local, full-text search |
+| Testing | Bun Test | Bun compatible, fast execution |
 
-## 관련 문서
+## Related Documents
 
-- [PRD](PRD.md) - 요구사항 정의서
-- [설계 문서](design/README.md) - 상세 설계
-- [이슈 목록](issues/README.md) - 구현 태스크
+- [PRD](PRD.md) - Product Requirements Document
+- [Design Docs](design/README.md) - Detailed Design
+- [Issues](issues/README.md) - Implementation Tasks

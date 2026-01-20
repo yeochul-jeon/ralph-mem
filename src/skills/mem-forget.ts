@@ -197,6 +197,10 @@ function getTargets(
 
 /**
  * Delete observations
+ *
+ * Note: We count successful deletions by checking if changes > 0,
+ * rather than summing changes directly, because bun:sqlite's changes
+ * includes side effects from FTS5 triggers (not just the primary DELETE).
  */
 function deleteObservations(client: DBClient, ids: string[]): number {
 	if (ids.length === 0) return 0;
@@ -206,7 +210,10 @@ function deleteObservations(client: DBClient, ids: string[]): number {
 		const result = client.db
 			.prepare("DELETE FROM observations WHERE id = ?")
 			.run(id);
-		deleted += result.changes;
+		// Each ID-based delete can only affect 0 or 1 row
+		if (result.changes > 0) {
+			deleted += 1;
+		}
 	}
 
 	return deleted;

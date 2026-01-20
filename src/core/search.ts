@@ -79,7 +79,7 @@ export function createSearchEngine(
 
 			// Build WHERE clauses for filters
 			const whereClauses: string[] = [];
-			const params: unknown[] = [];
+			const params: (string | number)[] = [];
 
 			if (since) {
 				whereClauses.push("o.created_at >= ?");

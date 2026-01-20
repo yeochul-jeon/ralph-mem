@@ -5,7 +5,7 @@
  * See: docs/design/storage-schema.md
  */
 
-import Database from "better-sqlite3";
+import { Database } from "bun:sqlite";
 import { nanoid } from "nanoid";
 import { runMigrations } from "./migrations";
 import type {
@@ -19,7 +19,7 @@ import type {
 
 export interface DBClient {
 	// Connection
-	readonly db: Database.Database;
+	readonly db: Database;
 	close(): void;
 
 	// Session CRUD
@@ -66,7 +66,7 @@ export function createDBClient(dbPath: string | ":memory:"): DBClient {
 	const db = new Database(dbPath);
 
 	// Enable foreign keys
-	db.pragma("foreign_keys = ON");
+	db.run("PRAGMA foreign_keys = ON");
 
 	// Run migrations
 	runMigrations(db);
@@ -105,7 +105,7 @@ export function createDBClient(dbPath: string | ":memory:"): DBClient {
 
 		updateSession(id: string, data: Partial<Session>): void {
 			const updates: string[] = [];
-			const values: unknown[] = [];
+			const values: (string | number | null | Uint8Array)[] = [];
 
 			if (data.ended_at !== undefined) {
 				updates.push("ended_at = ?");
@@ -246,7 +246,7 @@ export function createDBClient(dbPath: string | ":memory:"): DBClient {
 
 		updateLoopRun(id: string, data: Partial<LoopRun>): void {
 			const updates: string[] = [];
-			const values: unknown[] = [];
+			const values: (string | number | null)[] = [];
 
 			if (data.status !== undefined) {
 				updates.push("status = ?");

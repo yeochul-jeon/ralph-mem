@@ -1,17 +1,19 @@
 # Config System
 
-> 설정 시스템 설계
+> Configuration system design
 
-## 설정 위치
+**[한국어 버전 (Korean)](./config-system.ko.md)**
 
-| 위치 | 경로 | 용도 |
-|------|------|------|
-| 글로벌 | `~/.config/ralph-mem/config.yaml` | 기본 설정 |
-| 프로젝트 | `.ralph-mem/config.yaml` | 프로젝트별 오버라이드 |
+## Config Locations
 
-## 우선순위
+| Location | Path | Purpose |
+|----------|------|---------|
+| Global | `~/.config/ralph-mem/config.yaml` | Default settings |
+| Project | `.ralph-mem/config.yaml` | Per-project overrides |
 
-**프로젝트 설정 > 글로벌 설정 > 기본값**
+## Priority
+
+**Project settings > Global settings > Defaults**
 
 ```typescript
 function loadConfig(projectPath: string): Config {
@@ -23,12 +25,12 @@ function loadConfig(projectPath: string): Config {
 }
 ```
 
-## 설정 스키마
+## Config Schema
 
-### 전체 구조
+### Full Structure
 
 ```yaml
-# ralph-mem 설정
+# ralph-mem configuration
 ralph:
   max_iterations: 10
   context_budget: 0.6
@@ -58,40 +60,40 @@ logging:
   file: true
 ```
 
-### ralph 섹션
+### ralph Section
 
-| 키 | 타입 | 기본값 | 설명 |
-|-----|------|--------|------|
-| `max_iterations` | number | 10 | 최대 반복 횟수 |
-| `context_budget` | number | 0.6 | context window 사용률 상한 |
-| `cooldown_ms` | number | 1000 | 반복 간 대기 시간 |
-| `success_criteria` | array | - | 성공 기준 목록 |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `max_iterations` | number | 10 | Maximum iteration count |
+| `context_budget` | number | 0.6 | Context window usage limit |
+| `cooldown_ms` | number | 1000 | Wait time between iterations |
+| `success_criteria` | array | - | List of success criteria |
 
-### memory 섹션
+### memory Section
 
-| 키 | 타입 | 기본값 | 설명 |
-|-----|------|--------|------|
-| `auto_inject` | boolean | true | 세션 시작 시 자동 주입 |
-| `max_inject_tokens` | number | 2000 | 주입 최대 토큰 |
-| `retention_days` | number | 30 | 메모리 보관 기간 |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `auto_inject` | boolean | true | Auto-inject at session start |
+| `max_inject_tokens` | number | 2000 | Maximum injection tokens |
+| `retention_days` | number | 30 | Memory retention period |
 
-### search 섹션
+### search Section
 
-| 키 | 타입 | 기본값 | 설명 |
-|-----|------|--------|------|
-| `fts_first` | boolean | true | FTS5 우선 검색 |
-| `embedding_fallback` | boolean | true | 임베딩 폴백 활성화 |
-| `default_limit` | number | 10 | 기본 검색 결과 수 |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `fts_first` | boolean | true | FTS5 priority search |
+| `embedding_fallback` | boolean | true | Enable embedding fallback |
+| `default_limit` | number | 10 | Default search result count |
 
-### privacy 섹션
+### privacy Section
 
-| 키 | 타입 | 기본값 | 설명 |
-|-----|------|--------|------|
-| `exclude_patterns` | string[] | ["*.env", ...] | 기록 제외 패턴 |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `exclude_patterns` | string[] | ["*.env", ...] | Patterns to exclude from recording |
 
-## .gitignore 자동 추가
+## Auto-add to .gitignore
 
-프로젝트 초기화 시 `.gitignore`에 자동 추가:
+Auto-add to `.gitignore` on project initialization:
 
 ```typescript
 async function ensureGitignore(projectPath: string): Promise<void> {
@@ -109,22 +111,22 @@ async function ensureGitignore(projectPath: string): Promise<void> {
 }
 ```
 
-## 초기 설정 흐름
+## Initial Setup Flow
 
 ```mermaid
 flowchart TB
-    A[첫 실행] --> B{글로벌 설정 존재?}
-    B -->|NO| C[글로벌 기본값 생성]
-    B -->|YES| D{프로젝트 설정 존재?}
+    A[First run] --> B{Global config exists?}
+    B -->|NO| C[Create global defaults]
+    B -->|YES| D{Project config exists?}
     C --> D
-    D -->|NO| E[프로젝트 감지]
-    D -->|YES| F[설정 로드]
-    E --> G[대화형 설정]
-    G --> H[프로젝트 설정 생성]
+    D -->|NO| E[Project detection]
+    D -->|YES| F[Load config]
+    E --> G[Interactive setup]
+    G --> H[Create project config]
     H --> F
 ```
 
-### 프로젝트 감지
+### Project Detection
 
 ```typescript
 interface ProjectDetection {
@@ -144,19 +146,19 @@ async function detectProject(path: string): Promise<ProjectDetection> {
       lintCommand: pkg.scripts?.lint
     };
   }
-  // ... 다른 프로젝트 유형 감지
+  // ... detect other project types
 }
 ```
 
-## 설정 명령어
+## Config Commands
 
 ```bash
-# 현재 설정 조회
+# View current config
 /ralph config
 
-# 특정 값 수정
+# Modify specific value
 /ralph config set ralph.max_iterations 15
 
-# 프로젝트 설정 초기화
+# Initialize project config
 /ralph config init
 ```

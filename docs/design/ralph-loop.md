@@ -1,28 +1,30 @@
 # Ralph Loop
 
-> Loop Engine 설계
+> Loop Engine design
 
-## 개요
+**[한국어 버전 (Korean)](./ralph-loop.ko.md)**
 
-Ralph Loop는 성공 기준 달성까지 자동으로 반복 실행하는 Feature Layer 구성요소입니다.
-사용자가 `/ralph start`로 명시적으로 활성화합니다.
+## Overview
+
+Ralph Loop is a Feature Layer component that automatically iterates until success criteria are met.
+Users explicitly activate it with `/ralph start`.
 
 ```mermaid
 flowchart LR
-    A[Task + Context] --> B[Claude 실행]
-    B --> C{성공?}
-    C -->|YES| D[완료]
-    C -->|NO| E[결과 추가]
-    E --> F{중단 조건?}
+    A[Task + Context] --> B[Claude Execution]
+    B --> C{Success?}
+    C -->|YES| D[Complete]
+    C -->|NO| E[Add Result]
+    E --> F{Stop Condition?}
     F -->|NO| A
-    F -->|YES| G[실패 처리]
+    F -->|YES| G[Handle Failure]
 ```
 
-## 성공 판단
+## Success Judgment
 
-### Claude 기반 판단
+### Claude-based Judgment
 
-테스트 출력 전체를 Claude에게 전달하여 성공 여부를 판단합니다.
+Pass the entire test output to Claude to determine success.
 
 ```typescript
 interface SuccessJudgment {
@@ -34,25 +36,25 @@ interface SuccessJudgment {
 async function judgeSuccess(criteria: SuccessCriteria, output: string): Promise<SuccessJudgment>;
 ```
 
-### 지원 기준
+### Supported Criteria
 
-| 기준 | 명령어 예시 | 판단 방식 |
-|------|------------|----------|
-| `test_pass` | `npm test` | 테스트 결과 분석 |
-| `build_success` | `npm run build` | 빌드 로그 분석 |
-| `lint_clean` | `npm run lint` | lint 출력 분석 |
-| `type_check` | `tsc --noEmit` | 타입 에러 분석 |
-| `custom` | 사용자 정의 | 출력 기반 분석 |
+| Criteria | Command Example | Judgment Method |
+|----------|-----------------|-----------------|
+| `test_pass` | `npm test` | Test result analysis |
+| `build_success` | `npm run build` | Build log analysis |
+| `lint_clean` | `npm run lint` | Lint output analysis |
+| `type_check` | `tsc --noEmit` | Type error analysis |
+| `custom` | User-defined | Output-based analysis |
 
-## Overbaking 방지
+## Overbaking Prevention
 
-### 복합 중단 조건
+### Composite Stop Conditions
 
-| 조건                   | 기본값 | 설명                 |
-| ---------------------- | ------ | -------------------- |
-| `maxIterations`        | 10     | 최대 반복 횟수       |
-| `maxDurationMs`        | 30분   | 최대 실행 시간       |
-| `noProgressThreshold`  | 3회    | 진척 없음 허용 횟수  |
+| Condition | Default | Description |
+|-----------|---------|-------------|
+| `maxIterations` | 10 | Maximum iteration count |
+| `maxDurationMs` | 30 min | Maximum execution time |
+| `noProgressThreshold` | 3 | No-progress tolerance count |
 
 ```typescript
 function shouldStop(run: LoopRun, conditions: StopConditions): StopReason | null {
@@ -63,19 +65,19 @@ function shouldStop(run: LoopRun, conditions: StopConditions): StopReason | null
 }
 ```
 
-### 진척 없음 감지
+### No-Progress Detection
 
-Claude가 이전/현재 결과를 비교하여 종합 판단:
+Claude compares previous/current results for comprehensive judgment:
 
-- 에러 수 감소 여부
-- 새로운 접근 시도 여부
-- 문제 해결 진척 여부
+- Whether error count decreased
+- Whether new approaches were attempted
+- Whether problem-solving progress was made
 
-## 파일 스냅샷
+## File Snapshot
 
-### 스냅샷 범위
+### Snapshot Scope
 
-변경된 파일만 스냅샷 (git diff 활용):
+Only snapshot changed files (using git diff):
 
 ```typescript
 async function createSnapshot(run: LoopRun): Promise<string> {
@@ -88,34 +90,34 @@ async function createSnapshot(run: LoopRun): Promise<string> {
 }
 ```
 
-### 롤백
+### Rollback
 
-Loop 실패 시 롤백 안내:
+Provide rollback guidance on Loop failure:
 
 ```text
-❌ Loop 실패 (5회 시도)
-💾 스냅샷: .ralph-mem/snapshots/loop-xyz
+❌ Loop failed (5 attempts)
+💾 Snapshot: .ralph-mem/snapshots/loop-xyz
 
-롤백: /ralph rollback
-수동: cp -r .ralph-mem/snapshots/loop-xyz/* ./
+Rollback: /ralph rollback
+Manual: cp -r .ralph-mem/snapshots/loop-xyz/* ./
 ```
 
-## Loop 상태 관리
+## Loop State Management
 
-### 상태 전이
+### State Transitions
 
 ```mermaid
 stateDiagram-v2
     [*] --> Running: /ralph start
-    Running --> Success: 성공 기준 충족
-    Running --> Failed: 중단 조건 도달
+    Running --> Success: Success criteria met
+    Running --> Failed: Stop condition reached
     Running --> Stopped: /ralph stop
     Success --> [*]
     Failed --> [*]
     Stopped --> [*]
 ```
 
-### 상태 인터페이스
+### State Interface
 
 ```typescript
 interface LoopRun {
@@ -134,24 +136,24 @@ interface LoopRun {
 }
 ```
 
-## Hook 통합
+## Hook Integration
 
-Loop 실행 중 Hook Layer가 자동으로 각 iteration 결과를 기록:
+Hook Layer automatically records each iteration result during Loop execution:
 
 ```typescript
-// PostToolUse hook에서
+// In PostToolUse hook
 if (loopEngine.isRunning()) {
   observation.loopRunId = loopEngine.currentRun.id;
   observation.iteration = loopEngine.currentRun.iterations;
 }
 ```
 
-## 명령어
+## Commands
 
-| 명령어 | 동작 |
-|--------|------|
-| `/ralph start <task>` | Loop 시작 |
-| `/ralph start <task> --criteria <type>` | 특정 기준으로 시작 |
-| `/ralph stop` | 현재 Loop 중단 |
-| `/ralph status` | Loop 상태 조회 |
-| `/ralph rollback` | 스냅샷으로 롤백 |
+| Command | Action |
+|---------|--------|
+| `/ralph start <task>` | Start Loop |
+| `/ralph start <task> --criteria <type>` | Start with specific criteria |
+| `/ralph stop` | Stop current Loop |
+| `/ralph status` | Check Loop status |
+| `/ralph rollback` | Rollback to snapshot |

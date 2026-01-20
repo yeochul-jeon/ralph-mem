@@ -1,11 +1,13 @@
 # Hook Layer
 
-> Lifecycle Hooks 동작 설계
+> Lifecycle Hooks behavior design
 
-## 개요
+**[한국어 버전 (Korean)](./hook-layer.ko.md)**
 
-Hook Layer는 Claude Code의 lifecycle에 연결되어 **수동적으로** 동작합니다.
-사용자가 명시적으로 활성화하지 않아도 항상 작동합니다.
+## Overview
+
+Hook Layer connects to Claude Code's lifecycle and operates **passively**.
+It always works without explicit user activation.
 
 ```mermaid
 sequenceDiagram
@@ -14,123 +16,123 @@ sequenceDiagram
     participant Core as Core Layer
 
     CC->>Hook: SessionStart
-    Hook->>Core: 관련 메모리 검색
-    Core-->>Hook: 이전 컨텍스트
-    Hook-->>CC: 컨텍스트 주입
+    Hook->>Core: Search related memory
+    Core-->>Hook: Previous context
+    Hook-->>CC: Inject context
 
     CC->>Hook: UserPromptSubmit
-    Hook->>Core: 쿼리 관련 검색
-    Core-->>Hook: 관련 메모리
-    Hook-->>CC: 알림 표시
+    Hook->>Core: Query-related search
+    Core-->>Hook: Related memory
+    Hook-->>CC: Show notification
 
     CC->>Hook: PostToolUse
-    Hook->>Core: 결과 기록
+    Hook->>Core: Record result
 
     CC->>Hook: SessionEnd
-    Hook->>Core: 요약 생성 및 저장
+    Hook->>Core: Generate and save summary
 ```
 
 ## SessionStart
 
-세션 시작 시 이전 작업 컨텍스트를 자동 주입합니다.
+Automatically injects previous work context at session start.
 
-### 동작
+### Behavior
 
-1. 프로젝트 경로로 관련 세션 검색
-2. 최근 세션 요약 조회
-3. 컨텍스트 주입 (max_inject_tokens 이내)
+1. Search related sessions by project path
+2. Query recent session summaries
+3. Inject context (within max_inject_tokens)
 
-### 출력 형식
+### Output Format
 
 ```
-📝 이전 세션 컨텍스트:
-- [1/15] JWT 인증 미들웨어 구현 완료
-- [1/14] 사용자 모델 스키마 정의
-- [1/13] Express 프로젝트 초기화
+📝 Previous session context:
+- [1/15] JWT auth middleware implementation complete
+- [1/14] User model schema definition
+- [1/13] Express project initialization
 ```
 
 ## UserPromptSubmit
 
-사용자 프롬프트 제출 시 관련 메모리를 검색합니다.
+Searches related memory when user submits a prompt.
 
-### 동작
+### Behavior
 
-1. 프롬프트에서 키워드 추출
-2. FTS5 + Embedding으로 관련 메모리 검색
-3. 요약 알림 표시 (상세 내용은 주입하지 않음)
+1. Extract keywords from prompt
+2. Search related memory via FTS5 + Embedding
+3. Show summary notification (don't inject detailed content)
 
-### 알림 형식
+### Notification Format
 
 ```
-🔍 관련 메모리 발견:
-- JWT 인증 (1/15, 관련도: 0.92)
-- 에러 처리 패턴 (1/14, 관련도: 0.85)
-상세 조회: /mem-search --layer 3 <id>
+🔍 Related memory found:
+- JWT authentication (1/15, relevance: 0.92)
+- Error handling patterns (1/14, relevance: 0.85)
+View details: /mem-search --layer 3 <id>
 ```
 
-### 왜 알림만?
+### Why Notification Only?
 
-- 불필요한 컨텍스트 주입 방지
-- 사용자가 필요 시 명시적으로 조회
-- 토큰 효율성 유지
+- Prevent unnecessary context injection
+- User explicitly queries when needed
+- Maintain token efficiency
 
 ## PostToolUse
 
-도구 사용 후 결과를 메모리에 기록합니다.
+Records tool usage results to memory.
 
-### 기록 대상
+### Recording Targets
 
-| 도구 유형 | 기록 여부 | 이유 |
-|----------|----------|------|
-| 쓰기 도구 (Edit, Write) | ✅ | 코드 변경 추적 |
-| Bash | ✅ | 명령 실행 결과 |
-| 읽기 도구 (Read, Glob) | ❌ | 정보 조회만 |
-| 검색 도구 (Grep) | ❌ | 탐색 활동만 |
+| Tool Type | Record | Reason |
+|-----------|--------|--------|
+| Write tools (Edit, Write) | ✅ | Track code changes |
+| Bash | ✅ | Command execution results |
+| Read tools (Read, Glob) | ❌ | Information retrieval only |
+| Search tools (Grep) | ❌ | Exploration activity only |
 
-### 기록 내용
+### Recorded Content
 
 ```typescript
 interface ToolObservation {
   type: 'tool_use' | 'bash';
   tool_name: string;
-  content: string;        // 도구 출력
+  content: string;        // Tool output
   importance: number;     // 0.0 ~ 1.0
 }
 ```
 
-### 중요도 산정
+### Importance Scoring
 
-| 조건 | 중요도 |
-|------|--------|
-| 에러 발생 | 1.0 |
-| 테스트 통과/실패 | 0.9 |
-| 파일 생성/수정 | 0.7 |
-| 일반 명령 | 0.5 |
+| Condition | Importance |
+|-----------|------------|
+| Error occurred | 1.0 |
+| Test pass/fail | 0.9 |
+| File create/modify | 0.7 |
+| General command | 0.5 |
 
 ## SessionEnd
 
-세션 종료 시 요약을 생성하고 저장합니다.
+Generates and saves summary at session end.
 
-### 요약 시점
+### Summary Timing
 
-| 시점 | 동작 |
-|------|------|
-| 세션 종료 | 전체 세션 요약 생성 |
-| 주기적 (30분) | 중간 요약 생성 (긴 세션용) |
+| Timing | Action |
+|--------|--------|
+| Session end | Generate full session summary |
+| Periodic (30 min) | Generate intermediate summary (for long sessions) |
 
-### 요약 생성
+### Summary Generation
 
-Claude (현재 세션)를 사용하여 요약 생성:
+Use Claude (current session) to generate summary:
 
 ```typescript
 async function generateSummary(session: Session): Promise<string> {
   const observations = await store.getObservations(session.id);
 
   const prompt = `
-    다음 세션의 작업 내용을 요약해주세요:
-    - 주요 작업
-    - 해결한 문제
-    - 남은 이슈
+    Please summarize the following session work:
+    - Main tasks
+    - Problems solved
+    - Remaining issues
 
     ${formatObservations(observations)}
   `;
@@ -139,7 +141,7 @@ async function generateSummary(session: Session): Promise<string> {
 }
 ```
 
-### 요약 저장
+### Summary Storage
 
 ```typescript
 await store.endSession(session.id, {
@@ -148,9 +150,9 @@ await store.endSession(session.id, {
 });
 ```
 
-## Privacy 필터
+## Privacy Filter
 
-기록 전 민감 정보 필터링:
+Filter sensitive information before recording:
 
 ```yaml
 privacy:
@@ -161,7 +163,7 @@ privacy:
     - "*api_key*"
 ```
 
-### 필터 동작
+### Filter Behavior
 
 ```typescript
 function shouldRecord(content: string, config: Config): boolean {

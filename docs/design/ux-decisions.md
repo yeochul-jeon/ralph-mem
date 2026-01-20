@@ -1,113 +1,115 @@
 # UX Decisions
 
-> UI/UX 설계 결정 사항
+> UI/UX design decisions
 
-## 알림 형식
+**[한국어 버전 (Korean)](./ux-decisions.ko.md)**
 
-### 컨텍스트 주입 알림
+## Notification Formats
 
-상세 내용 대신 요약 목록으로 표시:
+### Context Injection Notification
 
-```
-📝 이전 세션 컨텍스트:
-- [1/15] JWT 인증 미들웨어 구현 완료
-- [1/14] 사용자 모델 스키마 정의
-- [1/13] Express 프로젝트 초기화
-```
-
-### 관련 메모리 발견 알림
+Display as summary list instead of detailed content:
 
 ```
-🔍 관련 메모리 발견:
-- JWT 인증 (1/15, 관련도: 0.92)
-- 에러 처리 패턴 (1/14, 관련도: 0.85)
-상세 조회: /mem-search --layer 3 <id>
+📝 Previous session context:
+- [1/15] JWT auth middleware implementation complete
+- [1/14] User model schema definition
+- [1/13] Express project initialization
 ```
 
-### 왜 요약만?
+### Related Memory Found Notification
 
-| 방식 | 토큰 | 장점 | 단점 |
-|------|------|------|------|
-| 전체 주입 | 많음 | 즉시 사용 가능 | 불필요한 컨텍스트 |
-| 요약 알림 | 적음 | 효율적 | 추가 조회 필요 |
+```
+🔍 Related memory found:
+- JWT authentication (1/15, relevance: 0.92)
+- Error handling patterns (1/14, relevance: 0.85)
+View details: /mem-search --layer 3 <id>
+```
 
-**선택: 요약 알림** - 사용자가 필요 시 명시적으로 조회
+### Why Summary Only?
 
-## Loop 진행 상태
+| Approach | Tokens | Pros | Cons |
+|----------|--------|------|------|
+| Full injection | Many | Immediately usable | Unnecessary context |
+| Summary notification | Few | Efficient | Requires additional lookup |
 
-### 상세 상태 표시
+**Choice: Summary notification** - User explicitly queries when needed
+
+## Loop Progress Status
+
+### Detailed Status Display
 
 ```
 🔄 Ralph Loop [3/10]
-├─ 태스크: Add user authentication
-├─ 기준: test_pass (npm test)
-├─ 경과: 5분 23초
-├─ 상태: 테스트 3개 실패 → 2개 실패
-└─ 진척: ✅ 에러 감소 중
+├─ Task: Add user authentication
+├─ Criteria: test_pass (npm test)
+├─ Elapsed: 5m 23s
+├─ Status: 3 tests failing → 2 tests failing
+└─ Progress: ✅ Errors decreasing
 ```
 
-### 상태 업데이트 시점
+### Status Update Timing
 
-| 이벤트 | 표시 내용 |
-|--------|----------|
-| 반복 시작 | 현재 반복 횟수 |
-| 테스트 실행 | 테스트 결과 요약 |
-| 반복 완료 | 진척 판단 결과 |
-| Loop 종료 | 최종 결과 및 통계 |
+| Event | Display Content |
+|-------|-----------------|
+| Iteration start | Current iteration count |
+| Test execution | Test result summary |
+| Iteration complete | Progress judgment result |
+| Loop end | Final result and statistics |
 
-## 이전 세션 정보
+## Previous Session Information
 
-### 자동 표시
+### Auto Display
 
-세션 시작 시 자동으로 이전 세션 정보 표시:
-
-```
-📋 이전 세션 (1/15 14:30)
-├─ 작업: JWT 인증 구현
-├─ 상태: 완료
-└─ 요약: 미들웨어 구현, 라우트 보호 적용
-
-관련 메모리 3건 발견. 상세: /mem-search auth
-```
-
-### 표시 조건
-
-- 동일 프로젝트의 최근 세션
-- 24시간 이내 세션만
-- 요약이 있는 세션만
-
-## 초기 설정
-
-### 대화형 설정
-
-첫 실행 시 프로젝트 감지 기반 대화형 설정:
+Automatically display previous session info at session start:
 
 ```
-🎯 ralph-mem 초기 설정
+📋 Previous session (1/15 14:30)
+├─ Task: JWT authentication implementation
+├─ Status: Complete
+└─ Summary: Middleware implementation, route protection applied
 
-감지된 프로젝트 유형: Node.js (TypeScript)
+3 related memories found. Details: /mem-search auth
+```
 
-테스트 명령어 설정:
-  [1] npm test (감지됨)
+### Display Conditions
+
+- Recent sessions from the same project
+- Sessions within 24 hours only
+- Sessions with summaries only
+
+## Initial Setup
+
+### Interactive Setup
+
+Interactive setup based on project detection on first run:
+
+```
+🎯 ralph-mem initial setup
+
+Detected project type: Node.js (TypeScript)
+
+Test command setup:
+  [1] npm test (detected)
   [2] npm run test:unit
-  [3] 직접 입력
+  [3] Enter manually
 
-선택 (기본: 1): _
+Selection (default: 1): _
 ```
 
-### 감지 대상
+### Detection Targets
 
-| 파일 | 감지 내용 |
-|------|----------|
-| `package.json` | 테스트/빌드/lint 스크립트 |
-| `tsconfig.json` | TypeScript 사용 |
-| `pyproject.toml` | Python 프로젝트 |
-| `.github/workflows/` | CI 설정 |
+| File | Detection Content |
+|------|-------------------|
+| `package.json` | test/build/lint scripts |
+| `tsconfig.json` | TypeScript usage |
+| `pyproject.toml` | Python project |
+| `.github/workflows/` | CI configuration |
 
-### 설정 저장
+### Settings Storage
 
 ```yaml
-# .ralph-mem/config.yaml (자동 생성)
+# .ralph-mem/config.yaml (auto-generated)
 project:
   type: nodejs
   detected_at: 2025-01-15T10:30:00Z
@@ -118,61 +120,61 @@ ralph:
       command: "npm test"
 ```
 
-## Skill 출력 형식
+## Skill Output Formats
 
 ### /mem-search
 
 ```
-🔍 검색 결과: "authentication" (5건)
+🔍 Search results: "authentication" (5 items)
 
-Layer 1 (인덱스):
+Layer 1 (Index):
 ┌────────────┬───────┬─────────────────────────┐
-│ ID         │ 점수  │ 요약                    │
+│ ID         │ Score │ Summary                 │
 ├────────────┼───────┼─────────────────────────┤
-│ obs-a1b2   │ 0.95  │ JWT 미들웨어 구현       │
-│ obs-c3d4   │ 0.87  │ 인증 라우트 추가        │
-│ obs-e5f6   │ 0.82  │ 토큰 검증 로직          │
+│ obs-a1b2   │ 0.95  │ JWT middleware impl     │
+│ obs-c3d4   │ 0.87  │ Auth routes added       │
+│ obs-e5f6   │ 0.82  │ Token validation logic  │
 └────────────┴───────┴─────────────────────────┘
 
-상세 조회: /mem-search --layer 3 obs-a1b2
+View details: /mem-search --layer 3 obs-a1b2
 ```
 
 ### /mem-status
 
 ```
-📊 ralph-mem 상태
+📊 ralph-mem status
 
-메모리:
-├─ 세션: 15개 (최근 30일)
-├─ 관찰: 342개
-├─ 용량: 12.5 MB
-└─ 마지막 백업: 1/15 14:00
+Memory:
+├─ Sessions: 15 (last 30 days)
+├─ Observations: 342
+├─ Size: 12.5 MB
+└─ Last backup: 1/15 14:00
 
 Loop:
-├─ 현재: 비활성
-├─ 총 실행: 8회
-└─ 성공률: 75%
+├─ Current: Inactive
+├─ Total runs: 8
+└─ Success rate: 75%
 
-설정: .ralph-mem/config.yaml
+Settings: .ralph-mem/config.yaml
 ```
 
 ### /ralph status
 
 ```
-🔄 Ralph Loop 상태
+🔄 Ralph Loop status
 
-현재 Loop:
+Current Loop:
 ├─ ID: loop-xyz123
-├─ 태스크: Add user authentication
-├─ 상태: running
-├─ 반복: 3/10
-├─ 시작: 5분 전
-└─ 기준: test_pass
+├─ Task: Add user authentication
+├─ Status: running
+├─ Iteration: 3/10
+├─ Started: 5 min ago
+└─ Criteria: test_pass
 
-최근 결과:
-├─ [3] 테스트 2개 실패
-├─ [2] 테스트 3개 실패
-└─ [1] 테스트 5개 실패
+Recent results:
+├─ [3] 2 tests failing
+├─ [2] 3 tests failing
+└─ [1] 5 tests failing
 
-중단: /ralph stop
+Stop: /ralph stop
 ```

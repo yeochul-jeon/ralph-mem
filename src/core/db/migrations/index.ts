@@ -5,7 +5,7 @@
  * See: docs/design/storage-schema.md
  */
 
-import type Database from "better-sqlite3";
+import type { Database } from "bun:sqlite";
 import type { Migration } from "../types";
 
 export interface MigrationDefinition {
@@ -117,7 +117,7 @@ export const MIGRATIONS: MigrationDefinition[] = [
 /**
  * Initialize migration tracking table
  */
-export function initMigrationTable(db: Database.Database): void {
+export function initMigrationTable(db: Database): void {
 	db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
       version INTEGER PRIMARY KEY,
@@ -130,7 +130,7 @@ export function initMigrationTable(db: Database.Database): void {
 /**
  * Get list of applied migrations
  */
-export function getAppliedMigrations(db: Database.Database): Migration[] {
+export function getAppliedMigrations(db: Database): Migration[] {
 	const stmt = db.prepare(
 		"SELECT version, name, applied_at FROM _migrations ORDER BY version",
 	);
@@ -140,7 +140,7 @@ export function getAppliedMigrations(db: Database.Database): Migration[] {
 /**
  * Get current schema version
  */
-export function getCurrentVersion(db: Database.Database): number {
+export function getCurrentVersion(db: Database): number {
 	const result = db
 		.prepare("SELECT MAX(version) as max_version FROM _migrations")
 		.get() as { max_version: number | null } | undefined;
@@ -150,7 +150,7 @@ export function getCurrentVersion(db: Database.Database): number {
 /**
  * Run pending migrations
  */
-export function runMigrations(db: Database.Database): {
+export function runMigrations(db: Database): {
 	applied: string[];
 	currentVersion: number;
 } {
@@ -193,7 +193,7 @@ export function runMigrations(db: Database.Database): {
 /**
  * Check if migrations are needed
  */
-export function needsMigration(db: Database.Database): boolean {
+export function needsMigration(db: Database): boolean {
 	initMigrationTable(db);
 	const currentVersion = getCurrentVersion(db);
 	const latestVersion = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0;
